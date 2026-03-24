@@ -663,7 +663,8 @@ def init_admin_panel(app):
     admin = Admin(
         app,
         name='Mezahub Admin Panel',
-        index_view=SecureAdminIndexView()
+        index_view=SecureAdminIndexView(),
+        template_mode='bootstrap4',
     )
 
     admin.add_view(UserAdminView(User, db.session, name='Users', endpoint='users'))
