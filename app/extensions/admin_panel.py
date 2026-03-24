@@ -331,10 +331,8 @@ class SecureAdminIndexView(AdminIndexView):
                 _serialize_pending_restaurant(restaurant)
                 for restaurant in Restaurant.query.filter_by(approved=False).order_by(Restaurant.created_at.desc()).limit(10).all()
             ]
-            recent_orders = [
-                _serialize_recent_order(order)
-                for order in Order.query.order_by(Order.created_at.desc()).limit(8).all()
-            ]
+            recent_order_rows = Order.query.order_by(Order.created_at.desc()).limit(8).all()
+            recent_orders = [_serialize_recent_order(order) for order in recent_order_rows]
             recent_users = User.query.order_by(User.created_at.desc()).limit(5).all()
             recent_restaurants = Restaurant.query.order_by(Restaurant.created_at.desc()).limit(5).all()
             recent_menu_items = MenuItem.query.order_by(MenuItem.created_at.desc()).limit(5).all()
@@ -489,7 +487,7 @@ class SecureAdminIndexView(AdminIndexView):
                         "aux": order.status.replace("_", " ").title(),
                         "href": url_for("orders.details_view", id=order.id, url=view_links.get("orders", "#")),
                     }
-                    for order in recent_orders[:5]
+                    for order in recent_order_rows[:5]
                 ],
             },
             {
