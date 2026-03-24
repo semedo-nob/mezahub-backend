@@ -1474,7 +1474,8 @@
   <body>
     {% block page_body %}
       <div class="admin-shell">
-        <div class="container{% if theme.fluid %}-fluid{% endif %}">
+        {% set theme_fluid = theme.fluid if theme is defined and theme else false %}
+        <div class="container{% if theme_fluid %}-fluid{% endif %}">
           <div class="admin-layout">
             <aside class="admin-sidebar">
               {% block brand %}
