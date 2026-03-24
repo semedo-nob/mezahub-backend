@@ -42,7 +42,6 @@ def get_current_admin_user():
 
 
 DASHBOARD_CACHE_KEY = "admin:dashboard:v1"
-DASHBOARD_CACHE_TTL_SECONDS = 45
 
 
 def count_users_by_roles(*roles):
@@ -246,7 +245,8 @@ class SecureAdminIndexView(AdminIndexView):
             if view is not self and getattr(view, "endpoint", None)
         }
 
-        client = cache.client
+        cache_ttl = max(int(self.admin.app.config.get("ADMIN_DASHBOARD_CACHE_TTL_SECONDS", 0) or 0), 0)
+        client = cache.client if cache_ttl > 0 else None
         cached_payload = client.get(DASHBOARD_CACHE_KEY) if client else None
         dashboard_data = json.loads(cached_payload) if cached_payload else None
 
@@ -613,9 +613,9 @@ class SecureAdminIndexView(AdminIndexView):
                 "recent_orders": recent_orders,
             }
 
-            if client:
+            if client and cache_ttl > 0:
                 try:
-                    client.setex(DASHBOARD_CACHE_KEY, DASHBOARD_CACHE_TTL_SECONDS, json.dumps(dashboard_data))
+                    client.setex(DASHBOARD_CACHE_KEY, cache_ttl, json.dumps(dashboard_data))
                 except Exception:
                     pass
 

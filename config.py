@@ -44,6 +44,7 @@ class Config:
     ]
     PUBLIC_API_BASE_URL = os.environ.get("PUBLIC_API_BASE_URL")
     LOG_TO_STDOUT = os.environ.get("LOG_TO_STDOUT", "true").lower() == "true"
+    ADMIN_DASHBOARD_CACHE_TTL_SECONDS = int(os.environ.get("ADMIN_DASHBOARD_CACHE_TTL_SECONDS", "0"))
 
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
     UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", "uploads")
