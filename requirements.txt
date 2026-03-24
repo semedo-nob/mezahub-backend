@@ -11,6 +11,8 @@ psycopg[binary]==3.2.6
 redis==5.0.1
 celery==5.3.6
 gunicorn==21.2.0
+gevent==24.11.1
+gevent-websocket==0.10.1
 marshmallow==3.21.1
 marshmallow-sqlalchemy==1.0.0
 PyJWT==2.8.0

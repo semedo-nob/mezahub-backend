@@ -26,22 +26,25 @@ def create_app(config_name: str = "default") -> Flask:
     app.config.from_object(cfg_cls())
 
     # Configure logging for production usage.
+    import os
     import logging
     from logging.handlers import RotatingFileHandler
-    import os
 
     log_level = logging.INFO
     logging.basicConfig(level=log_level)
-    log_path = os.path.join("logs", "app.log")
-    os.makedirs(os.path.dirname(log_path), exist_ok=True)
-    file_handler = RotatingFileHandler(log_path, maxBytes=5 * 1024 * 1024, backupCount=3)
-    file_handler.setLevel(log_level)
-    file_handler.setFormatter(
-        logging.Formatter(
-            "%(asctime)s [%(levelname)s] %(name)s - %(message)s"
-        )
-    )
-    app.logger.addHandler(file_handler)
+    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s - %(message)s")
+    if app.config.get("LOG_TO_STDOUT", True):
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(log_level)
+        stream_handler.setFormatter(formatter)
+        app.logger.addHandler(stream_handler)
+    else:
+        log_path = os.path.join("logs", "app.log")
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+        file_handler = RotatingFileHandler(log_path, maxBytes=5 * 1024 * 1024, backupCount=3)
+        file_handler.setLevel(log_level)
+        file_handler.setFormatter(formatter)
+        app.logger.addHandler(file_handler)
 
     # Optional Sentry monitoring
     init_sentry(app)
@@ -54,7 +57,11 @@ def create_app(config_name: str = "default") -> Flask:
     from app.extensions.admin_panel import init_admin_panel
     init_admin_panel(app)
     
-    socketio.init_app(app, cors_allowed_origins="*")
+    socketio.init_app(
+        app,
+        cors_allowed_origins=app.config.get("CORS_ORIGINS", ["*"]),
+        message_queue=app.config.get("REDIS_URL"),
+    )
     # Initialize Redis-backed helpers (cache + generic redis_client).
     redis_client.init_app(app)
     cache.init_app(app)
@@ -110,7 +117,11 @@ def create_app(config_name: str = "default") -> Flask:
 
     @app.get("/health")
     def health():
-        return {"status": "healthy", "version": "1.0.0"}
+        return {
+            "status": "healthy",
+            "version": "1.0.0",
+            "environment": config_name,
+        }
 
     @app.errorhandler(404)
     def not_found(_error):

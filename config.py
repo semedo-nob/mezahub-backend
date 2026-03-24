@@ -4,6 +4,16 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def _normalize_database_url(value: str | None) -> str | None:
+    if not value:
+        return value
+    if value.startswith("postgresql://"):
+        return value.replace("postgresql://", "postgresql+psycopg://", 1)
+    if value.startswith("postgres://"):
+        return value.replace("postgres://", "postgresql+psycopg://", 1)
+    return value
+
+
 def _build_postgres_uri() -> str:
     host = os.environ.get("DB_HOST", "localhost")
     port = os.environ.get("DB_PORT", "5433")
@@ -24,9 +34,16 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-    CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "http://localhost:3000,http://localhost:5000").split(
-        ","
-    )
+    CORS_ORIGINS = [
+        origin.strip()
+        for origin in os.environ.get(
+            "CORS_ORIGINS",
+            "http://localhost:3000,http://localhost:5000,http://127.0.0.1:5000",
+        ).split(",")
+        if origin.strip()
+    ]
+    PUBLIC_API_BASE_URL = os.environ.get("PUBLIC_API_BASE_URL")
+    LOG_TO_STDOUT = os.environ.get("LOG_TO_STDOUT", "true").lower() == "true"
 
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
     UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", "uploads")
@@ -45,7 +62,7 @@ class Config:
 
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:  # type: ignore[override]
-        database_url = os.environ.get("DATABASE_URL")
+        database_url = _normalize_database_url(os.environ.get("DATABASE_URL"))
         if database_url:
             return database_url
         # Default to SQLite for local dev (works out-of-the-box).
@@ -61,7 +78,7 @@ class DevelopmentConfig(Config):
         # Use SQLite by default so the app works without PostgreSQL (no port 5433).
         # Set USE_POSTGRES_DEV=1 in .env to use DATABASE_URL instead.
         if os.environ.get("USE_POSTGRES_DEV", "").strip().lower() in ("1", "true", "yes"):
-            url = os.environ.get("DATABASE_URL")
+            url = _normalize_database_url(os.environ.get("DATABASE_URL"))
             if url:
                 return url
         return os.environ.get("SQLITE_URL", "sqlite:///mezahub.db")
@@ -85,7 +102,7 @@ class ProductionConfig(Config):
 
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:  # type: ignore[override]
-        database_url = os.environ.get("DATABASE_URL")
+        database_url = _normalize_database_url(os.environ.get("DATABASE_URL"))
         if database_url:
             return database_url
         return _build_postgres_uri()
