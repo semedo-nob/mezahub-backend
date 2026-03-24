@@ -1,0 +1,176 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+<div class="details-shell">
+  <section class="toolbar-panel">
+    <div class="toolbar-top">
+      <div class="toolbar-copy">
+        <div class="section-kicker">Restaurant profile</div>
+        <h1 class="toolbar-title">{{ model.name }}</h1>
+        <p class="toolbar-subtitle">A cleaner operational view for merchant onboarding, brand assets, and service readiness.</p>
+      </div>
+      <div class="toolbar-cta">
+        <a class="btn btn-default" href="{{ return_url }}">{{ _gettext('Back To Restaurants') }}</a>
+        {% if admin_view.can_edit %}
+        <a class="btn btn-primary" href="{{ get_url('.edit_view', id=model.id, url=return_url) }}">{{ _gettext('Edit Restaurant') }}</a>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <div class="profile-shell">
+    <aside class="profile-card">
+      <div class="profile-avatar" style="width:120px;height:120px;border-radius:28px;">
+        {% if model.logo_image_url %}
+        <img src="{{ model.logo_image_url }}" alt="{{ model.name }} logo">
+        {% else %}
+        <span>{{ (model.name[:1] if model.name else '?')|upper }}</span>
+        {% endif %}
+      </div>
+      <div class="profile-name">{{ model.name }}</div>
+      <div class="profile-meta">{{ model.cuisine_type or 'Cuisine not set' }}</div>
+      <div>
+        <span class="profile-pill">{% if model.approved %}Approved{% else %}Pending Approval{% endif %}</span>
+        <span class="profile-pill">{% if model.is_open %}Open{% else %}Closed{% endif %}</span>
+      </div>
+      <div class="profile-actions">
+        {% if model.phone %}
+        <a class="btn btn-default" href="tel:{{ model.phone }}">Call</a>
+        {% endif %}
+        {% if model.owner %}
+        <a class="btn btn-default" href="{{ url_for('users.details_view', id=model.owner.id, url=url_for('users.index_view')) }}">Owner Profile</a>
+        {% endif %}
+      </div>
+    </aside>
+
+    <div class="profile-content">
+      <section class="profile-section">
+        <div class="profile-section-header">
+          <div>
+            <h2 class="mb-1">Brand Assets</h2>
+            <p class="mb-0 text-muted">How this restaurant appears in customer, restaurant, and admin experiences.</p>
+          </div>
+        </div>
+        <div class="profile-section-body">
+          <div style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:1rem;">
+            <div class="profile-field">
+              <span class="profile-label">Logo</span>
+              {% if model.logo_image_url %}
+              <div style="display:grid;gap:0.8rem;">
+                <img src="{{ model.logo_image_url }}" alt="{{ model.name }} logo" style="width:100%;max-height:220px;object-fit:cover;border-radius:20px;border:1px solid rgba(148,163,184,0.18);">
+                <a href="{{ model.logo_image_url }}" target="_blank" rel="noopener noreferrer" class="muted-text">Open full logo</a>
+              </div>
+              {% else %}
+              <div class="profile-value">No logo uploaded yet.</div>
+              {% endif %}
+            </div>
+            <div class="profile-field">
+              <span class="profile-label">Cover Image</span>
+              {% if model.cover_image_url %}
+              <div style="display:grid;gap:0.8rem;">
+                <img src="{{ model.cover_image_url }}" alt="{{ model.name }} cover image" style="width:100%;max-height:220px;object-fit:cover;border-radius:20px;border:1px solid rgba(148,163,184,0.18);">
+                <a href="{{ model.cover_image_url }}" target="_blank" rel="noopener noreferrer" class="muted-text">Open full cover image</a>
+              </div>
+              {% else %}
+              <div class="profile-value">No cover image uploaded yet.</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="profile-section">
+        <div class="profile-section-header">
+          <div>
+            <h2 class="mb-1">Operating Snapshot</h2>
+            <p class="mb-0 text-muted">The quick summary an admin needs before approving or intervening.</p>
+          </div>
+        </div>
+        <div class="profile-section-body">
+          <div class="profile-highlight-grid">
+            <div class="profile-highlight">
+              <div class="profile-highlight-label">Menu Categories</div>
+              <div class="profile-highlight-value">{{ model.menu_categories|length }}</div>
+            </div>
+            <div class="profile-highlight">
+              <div class="profile-highlight-label">Menu Items</div>
+              <div class="profile-highlight-value">{{ model.menu_items|length }}</div>
+            </div>
+            <div class="profile-highlight">
+              <div class="profile-highlight-label">Location</div>
+              <div class="profile-highlight-value">{% if model.latitude is not none and model.longitude is not none %}Ready{% else %}Missing{% endif %}</div>
+            </div>
+          </div>
+          <div class="profile-grid">
+            <div class="profile-field">
+              <span class="profile-label">Cuisine Type</span>
+              <div class="profile-value">{{ model.cuisine_type or 'Not set' }}</div>
+            </div>
+            <div class="profile-field">
+              <span class="profile-label">Phone</span>
+              <div class="profile-value">{{ model.phone or 'No phone on file' }}</div>
+            </div>
+            <div class="profile-field">
+              <span class="profile-label">Address</span>
+              <div class="profile-value">{{ model.address or 'No address on file' }}</div>
+            </div>
+            <div class="profile-field">
+              <span class="profile-label">Owner</span>
+              <div class="profile-value">
+                {% if model.owner %}
+                <a class="admin-entity-link" href="{{ url_for('users.details_view', id=model.owner.id, url=url_for('users.index_view')) }}">{{ model.owner.name }}</a>
+                {% else %}
+                Unassigned
+                {% endif %}
+              </div>
+            </div>
+            <div class="profile-field">
+              <span class="profile-label">Coordinates</span>
+              <div class="profile-value">
+                {% if model.latitude is not none and model.longitude is not none %}
+                {{ model.latitude }}, {{ model.longitude }}
+                {% else %}
+                Not configured
+                {% endif %}
+              </div>
+            </div>
+            <div class="profile-field">
+              <span class="profile-label">Created</span>
+              <div class="profile-value">{{ model.created_at.strftime('%b %d, %Y %H:%M UTC') if model.created_at else 'Unknown' }}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="profile-section">
+        <div class="profile-section-header">
+          <div>
+            <h2 class="mb-1">Full Record</h2>
+            <p class="mb-0 text-muted">The complete restaurant row, kept secondary so the page stays easier to scan.</p>
+          </div>
+        </div>
+        <div class="profile-section-body">
+          <div class="details-list">
+            {% for c, name in details_columns %}
+            <div class="details-row">
+              <div class="details-row-label">{{ name }}</div>
+              <div class="details-row-value">
+                {% set value = get_value(model, c) %}
+                {% if c in ['logo_image', 'cover_image'] and value %}
+                  <div style="display:grid;gap:0.8rem;">
+                    <img src="{{ value }}" alt="{{ name }}" style="max-width:220px;max-height:220px;object-fit:cover;border-radius:18px;border:1px solid rgba(148,163,184,0.16);">
+                    <a href="{{ value }}" target="_blank" rel="noopener noreferrer">{{ value }}</a>
+                  </div>
+                {% else %}
+                  {{ value }}
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}

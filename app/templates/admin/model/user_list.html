@@ -1,0 +1,218 @@
+{% extends 'admin/master.html' %}
+{% import 'admin/lib.html' as lib with context %}
+{% import 'admin/static.html' as admin_static with context %}
+{% import 'admin/model/layout.html' as model_layout with context %}
+{% import 'admin/actions.html' as actionlib with context %}
+
+{% block head %}
+    {{ super() }}
+    {{ lib.form_css() }}
+{% endblock %}
+
+{% block body %}
+<div class="admin-list-shell">
+  <section class="toolbar-panel">
+    <div class="toolbar-top">
+      <div class="toolbar-copy">
+        <div class="section-kicker">User Directory</div>
+        <h1 class="toolbar-title">{{ admin_view.name }}</h1>
+        <p class="toolbar-subtitle">Browse users as standalone profiles, search fast, and act on each account with clearer controls.</p>
+      </div>
+      <div class="toolbar-cta">
+        <a class="btn btn-default" href="{{ url_for('admin.profile') }}">Admin Profile</a>
+      </div>
+    </div>
+
+    <div class="toolbar-controls">
+      {% if search_supported %}
+      <div class="toolbar-search">
+        {{ model_layout.search_form(input_class='search-input') }}
+      </div>
+      {% endif %}
+
+      <div class="toolbar-menu">
+        <ul class="nav nav-pills admin-toolbar-menu">
+          <li class="nav-item">
+            <a href="javascript:void(0)" class="nav-link active">{{ _gettext('Users') }}{% if count %} ({{ count }}){% endif %}</a>
+          </li>
+          {% if admin_view.can_export %}
+            {{ model_layout.export_options('nav-link') }}
+          {% endif %}
+          {% if filters %}
+          <li class="nav-item dropdown">
+            {{ model_layout.filter_options('nav-link') }}
+          </li>
+          {% endif %}
+          {% if can_set_page_size %}
+          <li class="nav-item dropdown">
+            {{ model_layout.page_size_form(page_size_url, admin_view.page_size_options, 'nav-link') }}
+          </li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  {% if filters %}
+  <section class="filter-panel">
+    {{ model_layout.filter_form() }}
+  </section>
+  {% endif %}
+
+  <section class="model-table-card">
+    <div class="table-card-header">
+      <div>
+        <h2>User Profiles</h2>
+        <p>{{ count or data|length }} users ready for review.</p>
+      </div>
+    </div>
+
+    <div class="chart-body">
+      <div class="user-directory-grid">
+        {% for row in data %}
+        <article class="user-directory-card">
+          <a class="user-card-link" href="{{ get_url('.details_view', id=get_pk_value(row), url=return_url) }}">
+            <div class="user-card-top">
+              <div class="user-card-avatar">
+                {% if row.profile_image %}
+                <img src="{{ row.profile_image }}" alt="{{ row.name }}">
+                {% else %}
+                <span>{{ (row.name[:1] if row.name else '?')|upper }}</span>
+                {% endif %}
+              </div>
+              <div>
+                <div class="user-card-name">{{ row.name }}</div>
+                <div class="user-card-email">{{ row.email }}</div>
+              </div>
+            </div>
+
+            <div class="user-card-tags">
+              <span class="user-card-pill">{{ row.role|replace('_', ' ')|title }}</span>
+              <span class="user-card-pill">{% if row.is_active %}Active{% else %}Inactive{% endif %}</span>
+            </div>
+
+            <div class="user-card-meta">
+              <div class="user-card-field">
+                <span>Phone</span>
+                <span>{{ row.phone or 'No phone' }}</span>
+              </div>
+              <div class="user-card-field">
+                <span>Joined</span>
+                <span>{{ row.created_at.strftime('%b %d, %Y') if row.created_at else 'Unknown' }}</span>
+              </div>
+              <div class="user-card-field">
+                <span>User ID</span>
+                <span>#{{ row.id }}</span>
+              </div>
+            </div>
+          </a>
+          <div class="user-card-actions">
+            <a class="row-action-link" href="{{ get_url('.details_view', id=get_pk_value(row), url=return_url) }}">
+              <span class="fa fa-user-circle"></span>
+              <span>Profile</span>
+            </a>
+            <a class="row-action-link" href="{{ get_url('.edit_view', id=get_pk_value(row), url=return_url) }}">
+              <span class="fa fa-pencil"></span>
+              <span>Edit</span>
+            </a>
+            {% if row.id != current_user.id %}
+            <form class="row-action-delete-form" method="POST" action="{{ get_url('.toggle_operations', user_id=get_pk_value(row)) }}">
+              <input type="hidden" name="return_url" value="{{ return_url }}">
+              <button type="submit" class="row-action-link {% if row.is_active %}row-action-danger{% else %}row-action-success{% endif %}">
+                <span class="fa {% if row.is_active %}fa-pause-circle{% else %}fa-play-circle{% endif %}"></span>
+                <span>{% if row.is_active %}Pause{% else %}Resume{% endif %}</span>
+              </button>
+            </form>
+            {% endif %}
+            <form class="row-action-delete-form" method="POST" action="{{ get_url('.delete_view') }}">
+              {{ delete_form.id(value=get_pk_value(row)) }}
+              {{ delete_form.url(value=return_url) }}
+              {% if delete_form.csrf_token is defined and delete_form.csrf_token %}
+              {{ delete_form.csrf_token }}
+              {% elif csrf_token is defined and csrf_token %}
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+              {% endif %}
+              <button type="button" class="row-action-link row-action-danger js-delete-action" data-record="{{ row.name }}">
+                <span class="fa fa-trash"></span>
+                <span>Delete</span>
+              </button>
+            </form>
+          </div>
+        </article>
+        {% else %}
+        <div class="empty-list-state">
+          <div class="empty-list-title">{{ _gettext('No users found') }}</div>
+          <p>{{ admin_view.get_empty_list_message() }}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <div class="table-footer-tools">
+    {% if num_pages is not none %}
+      {{ lib.pager(page, num_pages, pager_url) }}
+    {% else %}
+      {{ lib.simple_pager(page, data|length == page_size, pager_url) }}
+    {% endif %}
+  </div>
+
+  <div class="modal fade" id="deleteConfirmModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">{{ _gettext('Delete User') }}</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="{{ _gettext('Close') }}">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">You are about to permanently remove <strong data-role="record-name">this user</strong>.</p>
+          <p class="mb-0 mt-2 text-muted">This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">{{ _gettext('Cancel') }}</button>
+          <button type="button" class="btn btn-danger" data-role="confirm-delete">{{ _gettext('Delete') }}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block tail %}
+    {{ super() }}
+    {% if filter_groups %}
+      <div id="filter-groups-data" class="d-none">{{ filter_groups|tojson|safe }}</div>
+      <div id="active-filters-data" class="d-none">{{ active_filters|tojson|safe }}</div>
+    {% endif %}
+    {{ lib.form_js() }}
+    <script {{ admin_csp_nonce_attribute }} src="{{ admin_static.url(filename='admin/js/bs4_filters.js', v='1.0.0') }}"></script>
+    <script {{ admin_csp_nonce_attribute }}>
+      document.addEventListener('DOMContentLoaded', function () {
+        if (typeof $ === 'undefined') {
+          return;
+        }
+
+        var modalSelector = '#deleteConfirmModal';
+        var pendingForm = null;
+
+        $(document).on('click', '.js-delete-action', function (event) {
+          event.preventDefault();
+          pendingForm = $(this).closest('form');
+          $('#deleteConfirmModal [data-role="record-name"]').text($(this).data('record') || 'this user');
+          $(modalSelector).modal('show');
+        });
+
+        $('#deleteConfirmModal [data-role="confirm-delete"]').on('click', function () {
+          if (pendingForm) {
+            pendingForm.trigger('submit');
+          }
+        });
+
+        $(modalSelector).on('hidden.bs.modal', function () {
+          pendingForm = null;
+        });
+      });
+    </script>
+{% endblock %}

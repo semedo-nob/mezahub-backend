@@ -1,0 +1,71 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+<div class="details-shell">
+  <section class="toolbar-panel">
+    <div class="toolbar-top">
+      <div class="toolbar-copy">
+        <div class="section-kicker">Admin Profile</div>
+        <h1 class="toolbar-title">{{ model.name if model else 'Administrator' }}</h1>
+        <p class="toolbar-subtitle">Your admin identity, access context, and account details for operating the dashboard.</p>
+      </div>
+      <div class="toolbar-cta">
+        <a class="btn btn-default" href="{{ url_for('admin.index') }}">Back To Dashboard</a>
+        {% if model %}
+        <a class="btn btn-primary" href="{{ url_for('users.details_view', id=model.id, url=url_for('users.index_view')) }}">Open Full User Profile</a>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  {% if model %}
+  <div class="profile-shell">
+    <aside class="profile-card">
+      <div class="profile-avatar">
+        {% if model.profile_image %}
+        <img src="{{ model.profile_image }}" alt="{{ model.name }}">
+        {% else %}
+        <span>{{ (model.name[:1] if model.name else '?')|upper }}</span>
+        {% endif %}
+      </div>
+      <div class="profile-name">{{ model.name }}</div>
+      <div class="profile-meta">{{ model.email }}</div>
+      <div>
+        <span class="profile-pill">{{ model.role|replace('_', ' ')|title }}</span>
+        <span class="profile-pill">{% if model.is_active %}Active{% else %}Inactive{% endif %}</span>
+      </div>
+    </aside>
+
+    <div class="profile-content">
+      <section class="profile-section">
+        <div class="profile-section-header">
+          <div>
+            <h2 class="mb-1">Access Summary</h2>
+            <p class="mb-0 text-muted">The key account information used by the admin panel.</p>
+          </div>
+        </div>
+        <div class="profile-section-body">
+          <div class="profile-grid">
+            <div class="profile-field"><span class="profile-label">Name</span><div class="profile-value">{{ model.name }}</div></div>
+            <div class="profile-field"><span class="profile-label">Login</span><div class="profile-value">{{ model.email }}</div></div>
+            <div class="profile-field"><span class="profile-label">Role</span><div class="profile-value">{{ model.role|replace('_', ' ')|title }}</div></div>
+            <div class="profile-field"><span class="profile-label">Status</span><div class="profile-value">{% if model.is_active %}Active{% else %}Inactive{% endif %}</div></div>
+            <div class="profile-field"><span class="profile-label">Phone</span><div class="profile-value">{{ model.phone or 'No phone on file' }}</div></div>
+            <div class="profile-field"><span class="profile-label">Created</span><div class="profile-value">{{ model.created_at.strftime('%b %d, %Y %H:%M UTC') if model.created_at else 'Unknown' }}</div></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+  {% else %}
+  <section class="details-card">
+    <div class="details-card-body">
+      <div class="empty-list-state">
+        <div class="empty-list-title">Admin profile unavailable</div>
+        <p>The current authenticated admin record could not be resolved.</p>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

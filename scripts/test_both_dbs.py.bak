@@ -1,0 +1,86 @@
+#!/usr/bin/env python
+"""
+Test both PostgreSQL and Redis connections for MEZAHUB.
+
+Run: python scripts/test_both_dbs.py
+"""
+
+import os
+import sys
+from datetime import datetime
+
+import psycopg2
+import redis
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+
+def test_connections() -> None:
+    print("\n" + "=" * 60)
+    print("TESTING MEZAHUB DATABASE CONNECTIONS")
+    print("=" * 60)
+
+    # PostgreSQL
+    print("\nPostgreSQL (localhost:5433 / mezahub)")
+    print("-" * 40)
+    try:
+        conn = psycopg2.connect(
+            host=os.getenv("DB_HOST", "localhost"),
+            port=os.getenv("DB_PORT", "5433"),
+            dbname=os.getenv("DB_NAME", "mezahub"),
+            user=os.getenv("DB_USER", "postgres"),
+            password=os.getenv("DB_PASSWORD", "postgres"),
+        )
+        with conn, conn.cursor() as cur:
+            cur.execute("SELECT version();")
+            version = cur.fetchone()[0]
+            print(f"  Connected. Version: {version[:60]}...")
+
+            cur.execute("SELECT pg_database_size(%s)/1024/1024;", (os.getenv("DB_NAME", "mezahub"),))
+            size_mb = cur.fetchone()[0]
+            print(f"  Database size: {size_mb} MB")
+
+            cur.execute(
+                "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';"
+            )
+            table_count = cur.fetchone()[0]
+            print(f"  Tables: {table_count}")
+    except Exception as exc:
+        print(f"  PostgreSQL connection failed: {exc}")
+
+    # Redis
+    print("\nRedis (localhost:6379)")
+    print("-" * 40)
+    try:
+        r0 = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True, socket_connect_timeout=2)
+        r0.ping()
+        info = r0.info()
+        print(f"  Connected. Version: {info.get('redis_version')}, mode: {info.get('redis_mode')}")
+        print(f"  Memory: {info.get('used_memory_human')}, clients: {info.get('connected_clients')}")
+
+        r0.set("mezahub:test", f"Connected at {datetime.utcnow().isoformat()}", ex=30)
+        print(f"  DB 0 test value: {r0.get('mezahub:test')}")
+
+        r1 = redis.Redis(host="localhost", port=6379, db=1, decode_responses=True, socket_connect_timeout=2)
+        r1.set("mezahub:ratelimit:test", "Rate limiting DB working", ex=30)
+        print(f"  DB 1 test value: {r1.get('mezahub:ratelimit:test')}")
+
+        print("\n  Key counts:")
+        for db_num in [0, 1, 2, 3]:
+            try:
+                r = redis.Redis(host="localhost", port=6379, db=db_num, socket_connect_timeout=1)
+                r.ping()
+                print(f"    DB {db_num}: {r.dbsize()} keys")
+            except Exception:
+                pass
+    except Exception as exc:
+        print(f"  Redis connection failed: {exc}")
+
+    print("\n" + "=" * 60)
+    print("CONNECTION TEST COMPLETE")
+    print("=" * 60 + "\n")
+
+
+if __name__ == "__main__":
+    test_connections()
+

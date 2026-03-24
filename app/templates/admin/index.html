@@ -1,0 +1,1675 @@
+{% extends 'admin/master.html' %}
+
+{% block head_css %}
+  {{ super() }}
+  <style>
+    .custom-dashboard {
+      padding: 0 0 2rem;
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+
+    .hero-panel {
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: minmax(0, 1.8fr) minmax(280px, 1fr);
+      gap: 1.5rem;
+      background:
+        radial-gradient(circle at top left, rgba(251, 191, 36, 0.28), transparent 32%),
+        linear-gradient(135deg, #1f2937 0%, #374151 55%, #0f766e 100%);
+      color: white;
+      border-radius: 32px;
+      padding: 2rem;
+      box-shadow: 0 32px 70px rgba(31, 41, 55, 0.18);
+      margin-bottom: 1.75rem;
+    }
+
+    .hero-panel::after {
+      content: "";
+      position: absolute;
+      inset: auto -60px -120px auto;
+      width: 240px;
+      height: 240px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 50%;
+      filter: blur(2px);
+    }
+
+    .hero-copy {
+      position: relative;
+      z-index: 1;
+      max-width: 760px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.45rem 0.8rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .db-header {
+      margin: 1rem 0 0;
+    }
+
+    .db-header h1 {
+      font-weight: 800;
+      color: white;
+      font-size: clamp(2rem, 4vw, 3.4rem);
+      line-height: 1;
+      letter-spacing: -0.05em;
+      margin-bottom: 0.85rem;
+    }
+
+    .db-header p {
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 1rem;
+      margin-bottom: 1.5rem;
+      max-width: 56ch;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+    }
+
+    .hero-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-radius: 999px;
+      padding: 0.78rem 1rem;
+      background: rgba(255, 255, 255, 0.12);
+      color: white;
+      text-decoration: none;
+      font-weight: 700;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    .hero-chip:hover {
+      color: white;
+      background: rgba(255, 255, 255, 0.18);
+      transform: translateY(-2px);
+      text-decoration: none;
+    }
+
+    .hero-side {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 1rem;
+      align-content: start;
+    }
+
+    .spotlight-card {
+      padding: 1.15rem 1.2rem;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(14px);
+    }
+
+    .spotlight-label {
+      display: block;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.45rem;
+    }
+
+    .spotlight-value {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      margin-bottom: 0.35rem;
+    }
+
+    .spotlight-detail {
+      color: rgba(255, 255, 255, 0.76);
+      font-size: 0.92rem;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .metric-card {
+      position: relative;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.88);
+      border-radius: 24px;
+      padding: 1.35rem;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.06);
+      border: 1px solid rgba(70, 55, 32, 0.12);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .metric-link {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .metric-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 24px 44px rgba(15, 23, 42, 0.1);
+    }
+
+    .metric-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, #d97706, #f59e0b, #14b8a6);
+    }
+
+    .metric-title {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 0.9rem;
+    }
+
+    .metric-value {
+      font-size: 2.4rem;
+      font-weight: 800;
+      color: #111827;
+      line-height: 1;
+      letter-spacing: -0.05em;
+      margin-bottom: 0.45rem;
+    }
+
+    .metric-note {
+      color: #6b7280;
+      font-size: 0.92rem;
+      margin: 0;
+    }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.9fr);
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .subsection-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      padding: 1.25rem;
+    }
+
+    .module-card {
+      display: block;
+      padding: 1.1rem;
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(251, 247, 241, 0.9));
+      border: 1px solid rgba(70, 55, 32, 0.1);
+      text-decoration: none;
+      color: #111827;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .module-card:hover {
+      text-decoration: none;
+      color: #111827;
+      transform: translateY(-2px);
+      box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+      border-color: rgba(217, 119, 6, 0.22);
+    }
+
+    .module-title {
+      font-size: 1rem;
+      font-weight: 800;
+      margin-bottom: 0.45rem;
+    }
+
+    .module-description {
+      color: #6b7280;
+      font-size: 0.92rem;
+      min-height: 2.8rem;
+      margin-bottom: 0.9rem;
+    }
+
+    .module-footer {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .module-stat {
+      display: block;
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+
+    .module-caption {
+      display: block;
+      color: #6b7280;
+      font-size: 0.85rem;
+      margin-top: 0.18rem;
+    }
+
+    .module-open {
+      font-weight: 800;
+      color: #b45309;
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    .nav-sequence-section {
+      scroll-margin-top: 24px;
+      scroll-snap-align: start;
+    }
+
+    .nav-sequence-home {
+      display: grid;
+      gap: 1.25rem;
+      min-height: calc(100vh - 72px);
+      align-content: start;
+    }
+
+    .nav-section-stack {
+      display: grid;
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    .sequence-card {
+      background: rgba(255, 255, 255, 0.88);
+      border-radius: 30px;
+      border: 1px solid rgba(70, 55, 32, 0.12);
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.06);
+      overflow: hidden;
+    }
+
+    .sequence-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 1rem;
+      padding: 1.5rem;
+      border-bottom: 1px solid rgba(70, 55, 32, 0.12);
+      background:
+        radial-gradient(circle at top right, rgba(217, 119, 6, 0.12), transparent 28%),
+        rgba(251, 247, 241, 0.82);
+    }
+
+    .sequence-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.38rem 0.72rem;
+      border-radius: 999px;
+      background: rgba(217, 119, 6, 0.12);
+      color: #b45309;
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.85rem;
+    }
+
+    .sequence-title {
+      font-size: clamp(1.45rem, 2.6vw, 2.15rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      margin: 0 0 0.45rem;
+      color: #111827;
+    }
+
+    .sequence-copy {
+      max-width: 58ch;
+      color: #6b7280;
+      margin: 0;
+    }
+
+    .sequence-kpi {
+      min-width: 220px;
+      padding: 1rem 1.1rem;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #1f2937 0%, #0f766e 100%);
+      color: white;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
+    }
+
+    .sequence-kpi-label {
+      display: block;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.45rem;
+    }
+
+    .sequence-kpi-value {
+      font-size: 2.3rem;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      line-height: 1;
+      margin-bottom: 0.28rem;
+    }
+
+    .sequence-kpi-link {
+      color: rgba(255, 255, 255, 0.84);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .sequence-kpi-link:hover {
+      color: white;
+      text-decoration: none;
+    }
+
+    .sequence-body {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+      gap: 1.25rem;
+      padding: 1.35rem 1.5rem 1.5rem;
+    }
+
+    .sequence-panel-title {
+      font-size: 1rem;
+      font-weight: 800;
+      color: #111827;
+      margin-bottom: 0.85rem;
+    }
+
+    .sequence-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.9rem;
+    }
+
+    .sequence-stat {
+      padding: 1rem 1.05rem;
+      border-radius: 20px;
+      background: rgba(251, 247, 241, 0.82);
+      border: 1px solid rgba(70, 55, 32, 0.08);
+    }
+
+    .sequence-stat-label {
+      display: block;
+      color: #6b7280;
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.35rem;
+    }
+
+    .sequence-stat-value {
+      font-size: 1.45rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: #111827;
+    }
+
+    .sequence-record-list {
+      display: grid;
+      gap: 0.8rem;
+    }
+
+    .sequence-record {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.9rem;
+      padding: 0.95rem 1rem;
+      border-radius: 18px;
+      background: rgba(251, 247, 241, 0.82);
+      border: 1px solid rgba(70, 55, 32, 0.08);
+      color: inherit;
+      text-decoration: none;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .sequence-record:hover {
+      color: inherit;
+      text-decoration: none;
+      transform: translateY(-1px);
+      box-shadow: 0 14px 28px rgba(15, 23, 42, 0.07);
+    }
+
+    .sequence-record-title {
+      font-weight: 800;
+      color: #111827;
+      margin-bottom: 0.2rem;
+    }
+
+    .sequence-record-meta,
+    .sequence-record-aux {
+      color: #6b7280;
+      font-size: 0.88rem;
+    }
+
+    .sequence-empty {
+      padding: 1rem 1.05rem;
+      border-radius: 20px;
+      background: rgba(251, 247, 241, 0.82);
+      border: 1px dashed rgba(70, 55, 32, 0.16);
+      color: #6b7280;
+    }
+
+    .table-card {
+      background: rgba(255, 255, 255, 0.88);
+      border-radius: 28px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.06);
+      border: 1px solid rgba(70, 55, 32, 0.12);
+      overflow: hidden;
+    }
+
+    .table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid rgba(70, 55, 32, 0.12);
+      background: rgba(251, 247, 241, 0.72);
+    }
+
+    .table-header h2 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #111827;
+      margin: 0;
+    }
+
+    .table-kicker {
+      color: #6b7280;
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+
+    .custom-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .custom-table th {
+      text-align: left;
+      padding: 1rem 1.5rem;
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: rgba(255, 255, 255, 0.65);
+      border-bottom: 1px solid rgba(70, 55, 32, 0.12);
+    }
+
+    .custom-table td {
+      padding: 1rem 1.5rem;
+      font-size: 0.875rem;
+      color: #111827;
+      border-bottom: 1px solid rgba(70, 55, 32, 0.08);
+      vertical-align: middle;
+    }
+
+    .custom-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.65rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 700;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.2s ease, transform 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-approve {
+      background: linear-gradient(135deg, #d97706, #f59e0b);
+      color: white;
+    }
+
+    .btn-approve:hover {
+      background: linear-gradient(135deg, #b45309, #d97706);
+      transform: translateY(-1px);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.38rem 0.8rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: capitalize;
+    }
+
+    .status-delivered { background: rgba(34, 197, 94, 0.14); color: #166534; }
+    .status-pending,
+    .status-confirmed,
+    .status-preparing { background: rgba(245, 158, 11, 0.16); color: #92400e; }
+    .status-assigned,
+    .status-picked-up,
+    .status-on-the-way { background: rgba(59, 130, 246, 0.14); color: #1d4ed8; }
+
+    .list-stack {
+      display: grid;
+      gap: 0.85rem;
+      padding: 1.25rem;
+    }
+
+    .link-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem 1.1rem;
+      border-radius: 18px;
+      background: rgba(251, 247, 241, 0.86);
+      border: 1px solid rgba(70, 55, 32, 0.08);
+      color: #111827;
+      text-decoration: none;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .link-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(217, 119, 6, 0.28);
+      color: #111827;
+      text-decoration: none;
+    }
+
+    .link-name {
+      font-weight: 800;
+      margin-bottom: 0.2rem;
+    }
+
+    .link-caption {
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+
+    .health-grid {
+      display: grid;
+      gap: 0.85rem;
+      padding: 1.25rem;
+    }
+
+    .health-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem 1.1rem;
+      border-radius: 18px;
+      background: rgba(251, 247, 241, 0.86);
+      border: 1px solid rgba(70, 55, 32, 0.08);
+      text-decoration: none;
+      color: #111827;
+    }
+
+    .health-card:hover {
+      text-decoration: none;
+      color: #111827;
+      border-color: rgba(217, 119, 6, 0.28);
+    }
+
+    .health-label {
+      font-weight: 700;
+      margin-bottom: 0.15rem;
+    }
+
+    .health-value {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    .status-grid {
+      display: grid;
+      gap: 0.85rem;
+      padding: 1.25rem;
+    }
+
+    .status-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.95rem 1rem;
+      border-radius: 18px;
+      border: 1px solid rgba(70, 55, 32, 0.08);
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .status-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .status-label {
+      font-weight: 700;
+      color: #374151;
+    }
+
+    .status-value {
+      font-size: 1.2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .chart-card {
+      background: rgba(255, 255, 255, 0.88);
+      border-radius: 28px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.06);
+      border: 1px solid rgba(70, 55, 32, 0.12);
+      overflow: hidden;
+    }
+
+    .chart-body {
+      padding: 1.25rem;
+    }
+
+    .chart-shell {
+      height: 280px;
+    }
+
+    .bar-chart {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 0.85rem;
+      align-items: end;
+      height: 220px;
+      padding-top: 1rem;
+    }
+
+    .bar-item {
+      display: grid;
+      justify-items: center;
+      gap: 0.55rem;
+      min-width: 0;
+    }
+
+    .bar-value {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: #6b7280;
+    }
+
+    .bar-track {
+      width: 100%;
+      height: 170px;
+      border-radius: 18px;
+      background: rgba(217, 119, 6, 0.08);
+      display: flex;
+      align-items: end;
+      padding: 0.3rem;
+    }
+
+    .bar-fill {
+      width: 100%;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+      min-height: 10px;
+    }
+
+    .bar-label {
+      font-size: 0.82rem;
+      color: #6b7280;
+      font-weight: 700;
+    }
+
+    .line-chart-wrap {
+      position: relative;
+      height: 220px;
+      margin-top: 0.75rem;
+      border-radius: 24px;
+      background:
+        linear-gradient(to top, rgba(217, 119, 6, 0.05) 1px, transparent 1px) 0 0/100% 25%,
+        rgba(251, 247, 241, 0.72);
+      border: 1px solid rgba(70, 55, 32, 0.08);
+      overflow: hidden;
+    }
+
+    .line-chart-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .line-axis {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 0.85rem;
+      margin-top: 0.7rem;
+      text-align: center;
+      font-size: 0.82rem;
+      color: #6b7280;
+      font-weight: 700;
+    }
+
+    .donut-wrap {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .donut-chart {
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      margin: 0 auto;
+      position: relative;
+      background: conic-gradient(
+        #f59e0b 0% var(--segment-1),
+        #3b82f6 var(--segment-1) var(--segment-2),
+        #22c55e var(--segment-2) var(--segment-3),
+        #ef4444 var(--segment-3) var(--segment-4),
+        #6b7280 var(--segment-4) 100%
+      );
+      box-shadow: inset 0 0 0 1px rgba(70, 55, 32, 0.08);
+    }
+
+    .donut-chart::after {
+      content: "";
+      position: absolute;
+      inset: 34px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 1px rgba(70, 55, 32, 0.08);
+    }
+
+    .donut-center {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      z-index: 1;
+      text-align: center;
+    }
+
+    .donut-total {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      color: #111827;
+      line-height: 1;
+    }
+
+    .donut-subtitle {
+      color: #6b7280;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .legend-list {
+      display: grid;
+      gap: 0.7rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.85rem 1rem;
+      border-radius: 16px;
+      background: rgba(251, 247, 241, 0.72);
+      border: 1px solid rgba(70, 55, 32, 0.08);
+    }
+
+    .legend-copy {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      font-weight: 700;
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .legend-total {
+      font-weight: 800;
+      color: #111827;
+    }
+
+    .tone-success { background: rgba(34, 197, 94, 0.1); }
+    .tone-warning { background: rgba(245, 158, 11, 0.12); }
+    .tone-danger { background: rgba(239, 68, 68, 0.1); }
+    .tone-info { background: rgba(59, 130, 246, 0.1); }
+    .tone-muted { background: rgba(107, 114, 128, 0.1); }
+
+    .empty-state {
+      padding: 3rem;
+      text-align: center;
+      color: #6b7280;
+    }
+
+    .muted-text {
+      color: #6b7280;
+    }
+
+    [data-theme="dark"] .metric-card,
+    [data-theme="dark"] .table-card,
+    [data-theme="dark"] .chart-card,
+    [data-theme="dark"] .sequence-card {
+      background: rgba(15, 23, 42, 0.84);
+      border-color: rgba(148, 163, 184, 0.14);
+      box-shadow: 0 20px 40px rgba(2, 6, 23, 0.24);
+    }
+
+    [data-theme="dark"] .metric-title,
+    [data-theme="dark"] .metric-note,
+    [data-theme="dark"] .table-kicker,
+    [data-theme="dark"] .link-caption,
+    [data-theme="dark"] .bar-value,
+    [data-theme="dark"] .bar-label,
+    [data-theme="dark"] .line-axis,
+    [data-theme="dark"] .donut-subtitle,
+    [data-theme="dark"] .empty-state,
+    [data-theme="dark"] .muted-text,
+    [data-theme="dark"] .sequence-copy,
+    [data-theme="dark"] .sequence-record-meta,
+    [data-theme="dark"] .sequence-record-aux,
+    [data-theme="dark"] .sequence-stat-label {
+      color: var(--admin-muted);
+    }
+
+    [data-theme="dark"] .metric-value,
+    [data-theme="dark"] .table-header h2,
+    [data-theme="dark"] .custom-table td,
+    [data-theme="dark"] .module-card,
+    [data-theme="dark"] .link-card,
+    [data-theme="dark"] .health-card,
+    [data-theme="dark"] .status-label,
+    [data-theme="dark"] .donut-total,
+    [data-theme="dark"] .legend-total,
+    [data-theme="dark"] .sequence-title,
+    [data-theme="dark"] .sequence-panel-title,
+    [data-theme="dark"] .sequence-stat-value,
+    [data-theme="dark"] .sequence-record-title {
+      color: var(--admin-ink);
+    }
+
+    [data-theme="dark"] .module-card,
+    [data-theme="dark"] .link-card,
+    [data-theme="dark"] .health-card,
+    [data-theme="dark"] .legend-item,
+    [data-theme="dark"] .status-card,
+    [data-theme="dark"] .sequence-stat,
+    [data-theme="dark"] .sequence-record,
+    [data-theme="dark"] .sequence-empty {
+      background: rgba(22, 33, 50, 0.72);
+      border-color: rgba(148, 163, 184, 0.12);
+    }
+
+    [data-theme="dark"] .module-card:hover,
+    [data-theme="dark"] .link-card:hover,
+    [data-theme="dark"] .health-card:hover {
+      color: var(--admin-ink);
+      border-color: rgba(245, 158, 11, 0.28);
+      box-shadow: 0 18px 36px rgba(2, 6, 23, 0.2);
+    }
+
+    [data-theme="dark"] .module-description,
+    [data-theme="dark"] .module-caption {
+      color: var(--admin-muted);
+    }
+
+    [data-theme="dark"] .module-open {
+      color: var(--admin-accent-deep);
+    }
+
+    [data-theme="dark"] .table-header,
+    [data-theme="dark"] .sequence-header {
+      background: rgba(22, 33, 50, 0.9);
+      border-bottom-color: rgba(148, 163, 184, 0.14);
+    }
+
+    [data-theme="dark"] .sequence-eyebrow {
+      background: rgba(245, 158, 11, 0.16);
+      color: #fcd34d;
+    }
+
+    [data-theme="dark"] .custom-table th {
+      background: rgba(15, 23, 42, 0.96);
+      color: #cbd5e1;
+      border-bottom-color: rgba(148, 163, 184, 0.14);
+    }
+
+    [data-theme="dark"] .custom-table td {
+      border-bottom-color: rgba(148, 163, 184, 0.1);
+    }
+
+    [data-theme="dark"] .bar-track {
+      background: rgba(245, 158, 11, 0.12);
+    }
+
+    [data-theme="dark"] .line-chart-wrap {
+      background:
+        linear-gradient(to top, rgba(245, 158, 11, 0.08) 1px, transparent 1px) 0 0/100% 25%,
+        rgba(22, 33, 50, 0.72);
+      border-color: rgba(148, 163, 184, 0.12);
+    }
+
+    [data-theme="dark"] .donut-chart::after {
+      background: rgba(15, 23, 42, 0.96);
+      box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.12);
+    }
+
+    [data-theme="dark"] .tone-success { background: rgba(34, 197, 94, 0.14); }
+    [data-theme="dark"] .tone-warning { background: rgba(245, 158, 11, 0.16); }
+    [data-theme="dark"] .tone-danger { background: rgba(239, 68, 68, 0.14); }
+    [data-theme="dark"] .tone-info { background: rgba(59, 130, 246, 0.16); }
+    [data-theme="dark"] .tone-muted { background: rgba(107, 114, 128, 0.16); }
+
+    [data-theme="dark"] .status-delivered {
+      background: rgba(34, 197, 94, 0.16);
+      color: #86efac;
+    }
+
+    [data-theme="dark"] .status-pending,
+    [data-theme="dark"] .status-confirmed,
+    [data-theme="dark"] .status-preparing {
+      background: rgba(245, 158, 11, 0.16);
+      color: #fcd34d;
+    }
+
+    [data-theme="dark"] .status-assigned,
+    [data-theme="dark"] .status-picked-up,
+    [data-theme="dark"] .status-on-the-way {
+      background: rgba(59, 130, 246, 0.18);
+      color: #93c5fd;
+    }
+
+    @media (max-width: 1180px) {
+      .hero-panel,
+      .chart-grid,
+      .subsection-grid,
+      .section-grid,
+      .content-grid,
+      .sequence-body {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 767px) {
+      .custom-dashboard {
+        padding-bottom: 1.5rem;
+      }
+
+      .hero-panel {
+        padding: 1.4rem;
+        border-radius: 24px;
+      }
+
+      .table-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .custom-table {
+        min-width: 640px;
+      }
+
+      .donut-wrap {
+        grid-template-columns: 1fr;
+      }
+
+      .metric-card,
+      .table-card,
+      .chart-card,
+      .sequence-card {
+        border-radius: 22px;
+      }
+
+      .sequence-stat-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block body %}
+<div class="custom-dashboard">
+  {% set max_order_trend = (order_trend|max) if order_trend else 1 %}
+  {% set max_revenue_trend = (revenue_trend|max) if revenue_trend else 1 %}
+  {% set order_total = metrics.pending_orders + metrics.orders_in_flight + metrics.delivered_orders + metrics.cancelled_orders + metrics.other_orders %}
+  {% set segment_1 = ((metrics.pending_orders / order_total) * 100) if order_total else 0 %}
+  {% set segment_2 = (((metrics.pending_orders + metrics.orders_in_flight) / order_total) * 100) if order_total else 0 %}
+  {% set segment_3 = (((metrics.pending_orders + metrics.orders_in_flight + metrics.delivered_orders) / order_total) * 100) if order_total else 0 %}
+  {% set segment_4 = (((metrics.pending_orders + metrics.orders_in_flight + metrics.delivered_orders + metrics.cancelled_orders) / order_total) * 100) if order_total else 0 %}
+
+  <div class="nav-sequence-section nav-sequence-home" id="section-home">
+  <section class="hero-panel">
+    <div class="hero-copy">
+      <span class="eyebrow">Operations overview</span>
+      <div class="db-header">
+        <h1>Mezahub Admin Dashboard</h1>
+        <p>Track marketplace growth, clear restaurant approvals fast, and keep dispatch activity moving from one polished control room.</p>
+      </div>
+      <div class="hero-actions">
+        <a class="hero-chip" href="#approvals">Review pending restaurants</a>
+        <a class="hero-chip" href="#orders">Check recent orders</a>
+      </div>
+    </div>
+    <div class="hero-side">
+      <div class="spotlight-card">
+        <span class="spotlight-label">Orders in motion</span>
+        <div class="spotlight-value">{{ metrics.orders_in_flight }}</div>
+        <div class="spotlight-detail">Active fulfillment across pending, assigned, and on-the-way orders.</div>
+      </div>
+      <div class="spotlight-card">
+        <span class="spotlight-label">Last 24 hours</span>
+        <div class="spotlight-value">{{ metrics.orders_today }}</div>
+        <div class="spotlight-detail">Orders created in the last 24 hours as of {{ generated_at.strftime('%b %d, %Y %H:%M UTC') }}.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="metrics-grid">
+    <a class="metric-link" href="{{ view_links.get('users', '#') }}">
+      <div class="metric-card">
+        <div class="metric-title">Active Users</div>
+        <div class="metric-value">{{ metrics.total_users }}</div>
+        <p class="metric-note">People currently able to place, manage, and deliver orders.</p>
+      </div>
+    </a>
+    <a class="metric-link" href="{{ view_links.get('restaurants', '#') }}">
+      <div class="metric-card">
+        <div class="metric-title">Approved Restaurants</div>
+        <div class="metric-value">{{ metrics.total_restaurants }}</div>
+        <p class="metric-note">{{ metrics.pending_restaurants }} still waiting for approval.</p>
+      </div>
+    </a>
+    <a class="metric-link" href="{{ view_links.get('orders', '#') }}">
+      <div class="metric-card">
+        <div class="metric-title">Total Orders</div>
+        <div class="metric-value">{{ metrics.total_orders }}</div>
+        <p class="metric-note">{{ metrics.orders_today }} created in the last 24 hours.</p>
+      </div>
+    </a>
+    <a class="metric-link" href="{{ view_links.get('deliveries', '#') }}">
+      <div class="metric-card">
+        <div class="metric-title">Delivered Revenue</div>
+        <div class="metric-value">${{ "%.2f"|format(metrics.total_revenue) }}</div>
+        <p class="metric-note">Captured from orders marked as delivered.</p>
+      </div>
+    </a>
+  </div>
+
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="table-header">
+        <h2>Weekly Orders Graph</h2>
+        <span class="table-kicker">Seven-day order volume from live records</span>
+      </div>
+      <div class="chart-body chart-shell">
+        <div class="bar-chart">
+          {% for value in order_trend %}
+          <div class="bar-item">
+            <div class="bar-value">{{ value }}</div>
+            <div class="bar-track">
+              <div class="bar-fill" style="height: {{ ((value / max_order_trend) * 100) if max_order_trend else 6 }}%;"></div>
+            </div>
+            <div class="bar-label">{{ trend_labels[loop.index0] }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="table-header">
+        <h2>Order Status Graph</h2>
+        <span class="table-kicker">Distribution across the full order pipeline</span>
+      </div>
+      <div class="chart-body">
+        <div class="donut-wrap">
+          <div class="donut-chart"
+               style="--segment-1: {{ segment_1 }}%; --segment-2: {{ segment_2 }}%; --segment-3: {{ segment_3 }}%; --segment-4: {{ segment_4 }}%;">
+            <div class="donut-center">
+              <div>
+                <div class="donut-total">{{ metrics.total_orders }}</div>
+                <div class="donut-subtitle">Total orders</div>
+              </div>
+            </div>
+          </div>
+          <div class="legend-list">
+            <div class="legend-item">
+              <div class="legend-copy"><span class="legend-dot" style="background:#f59e0b;"></span>Pending</div>
+              <div class="legend-total">{{ metrics.pending_orders }}</div>
+            </div>
+            <div class="legend-item">
+              <div class="legend-copy"><span class="legend-dot" style="background:#3b82f6;"></span>In flight</div>
+              <div class="legend-total">{{ metrics.orders_in_flight }}</div>
+            </div>
+            <div class="legend-item">
+              <div class="legend-copy"><span class="legend-dot" style="background:#22c55e;"></span>Delivered</div>
+              <div class="legend-total">{{ metrics.delivered_orders }}</div>
+            </div>
+            <div class="legend-item">
+              <div class="legend-copy"><span class="legend-dot" style="background:#ef4444;"></span>Cancelled</div>
+              <div class="legend-total">{{ metrics.cancelled_orders }}</div>
+            </div>
+            <div class="legend-item">
+              <div class="legend-copy"><span class="legend-dot" style="background:#6b7280;"></span>Other</div>
+              <div class="legend-total">{{ metrics.other_orders }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="table-header">
+        <h2>Revenue Trend Graph</h2>
+        <span class="table-kicker">Delivered revenue generated over the last seven days</span>
+      </div>
+      <div class="chart-body">
+        <div class="line-chart-wrap">
+          <svg class="line-chart-svg" viewBox="0 0 700 220" preserveAspectRatio="none" aria-label="Revenue trend graph">
+            {% set ns = namespace(points=[], area_points=[]) %}
+            {% for value in revenue_trend %}
+              {% set x = 40 + (loop.index0 * 103.333333) %}
+              {% set ratio = ((value / max_revenue_trend) if max_revenue_trend else 0) %}
+              {% set y = 190 - (ratio * 150) %}
+              {% set ns.points = ns.points + ['%0.2f,%0.2f'|format(x, y)] %}
+              {% set ns.area_points = ns.area_points + ['%0.2f,%0.2f'|format(x, y)] %}
+            {% endfor %}
+            <polyline fill="rgba(217, 119, 6, 0.14)"
+                      stroke="none"
+                      points="40,190 {{ ns.area_points|join(' ') }} 660,190" />
+            <polyline fill="none"
+                      stroke="#d97706"
+                      stroke-width="4"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      points="{{ ns.points|join(' ') }}" />
+            {% for value in revenue_trend %}
+              {% set x = 40 + (loop.index0 * 103.333333) %}
+              {% set ratio = ((value / max_revenue_trend) if max_revenue_trend else 0) %}
+              {% set y = 190 - (ratio * 150) %}
+              <circle cx="{{ '%.2f'|format(x) }}" cy="{{ '%.2f'|format(y) }}" r="5" fill="#fff" stroke="#d97706" stroke-width="3" />
+            {% endfor %}
+          </svg>
+        </div>
+        <div class="line-axis">
+          {% for label in trend_labels %}
+          <div>{{ label }}</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="table-header">
+        <h2>Payment Controls</h2>
+        <span class="table-kicker">Operational payment and notification checkpoints</span>
+      </div>
+      <div class="status-grid">
+        {% for item in payment_statuses %}
+        <div class="status-card tone-{{ item.tone }}">
+          <div class="status-copy">
+            <span class="status-label">{{ item.label }}</span>
+            <span class="link-caption">Live backend aggregate</span>
+          </div>
+          <div class="status-value">{{ item.value }}</div>
+        </div>
+        {% endfor %}
+        <div class="status-card tone-info">
+          <div class="status-copy">
+            <span class="status-label">Revenue last 24h</span>
+            <span class="link-caption">Delivered revenue generated recently</span>
+          </div>
+          <div class="status-value">${{ "%.2f"|format(metrics.revenue_today) }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="subsection-grid">
+    <div class="table-card">
+      <div class="table-header">
+        <h2>Commercial Snapshot</h2>
+        <span class="table-kicker">Revenue, payments, and customer activity</span>
+      </div>
+      <div class="health-grid">
+        <a class="health-card" href="{{ view_links.get('orders', '#') }}">
+          <div>
+            <div class="health-label">Revenue in last 24h</div>
+            <div class="link-caption">Delivered orders created in the last day.</div>
+          </div>
+          <div class="health-value">${{ "%.2f"|format(metrics.revenue_today) }}</div>
+        </a>
+        <div class="health-card">
+          <div>
+            <div class="health-label">Completed payments</div>
+            <div class="link-caption">{{ metrics.payments_total }} total payment records.</div>
+          </div>
+          <div class="health-value">{{ metrics.payments_completed }}</div>
+        </div>
+        <div class="health-card">
+          <div>
+            <div class="health-label">Favorites saved</div>
+            <div class="link-caption">Customer affinity across restaurants and menu items.</div>
+          </div>
+          <div class="health-value">{{ metrics.favorites_total }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <h2>Order Flow</h2>
+        <span class="table-kicker">Real-time order pipeline</span>
+      </div>
+      <div class="status-grid">
+        {% for item in order_statuses %}
+        <div class="status-card tone-{{ item.tone }}">
+          <div class="status-copy">
+            <span class="status-label">{{ item.label }}</span>
+            <span class="link-caption">Current order count</span>
+          </div>
+          <div class="status-value">{{ item.value }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <h2>Platform Health</h2>
+        <span class="table-kicker">Supply, engagement, and quality signals</span>
+      </div>
+      <div class="health-grid">
+        {% for item in platform_health %}
+        {% if item.href %}
+        <a class="health-card" href="{{ item.href }}">
+          <div>
+            <div class="health-label">{{ item.label }}</div>
+            <div class="link-caption">Live system metric</div>
+          </div>
+          <div class="health-value">{{ item.value }}</div>
+        </a>
+        {% else %}
+        <div class="health-card">
+          <div>
+            <div class="health-label">{{ item.label }}</div>
+            <div class="link-caption">Live system metric</div>
+          </div>
+          <div class="health-value">{{ item.value }}</div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="section-grid">
+    <div class="table-card">
+      <div class="table-header">
+        <h2>Quick Access</h2>
+        <span class="table-kicker">Every module opens straight into actionable management views</span>
+      </div>
+      <div class="module-grid">
+        {% for module in dashboard_modules %}
+        <a class="module-card" href="{{ module.url }}">
+          <div class="module-title">{{ module.name }}</div>
+          <div class="module-description">{{ module.description }}</div>
+          <div class="module-footer">
+            <div>
+              <span class="module-stat">{{ module.stat }}</span>
+              <span class="module-caption">{{ module.caption }}</span>
+            </div>
+            <span class="module-open">Open</span>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <h2>Dispatch Snapshot</h2>
+        <span class="table-kicker">Live service readiness</span>
+      </div>
+      <div class="list-stack">
+        <a class="link-card" href="{{ view_links.get('riders', '#') }}">
+          <div>
+            <div class="link-name">Available riders</div>
+            <div class="link-caption">Delivery capacity ready to accept new jobs.</div>
+          </div>
+          <strong>{{ metrics.available_riders }}</strong>
+        </a>
+        <a class="link-card" href="{{ view_links.get('restaurants', '#') }}">
+          <div>
+            <div class="link-name">Pending approvals</div>
+            <div class="link-caption">Restaurants that still need a manual decision.</div>
+          </div>
+          <strong>{{ metrics.pending_restaurants }}</strong>
+        </a>
+        <a class="link-card" href="{{ view_links.get('orders', '#') }}">
+          <div>
+            <div class="link-name">Revenue baseline</div>
+            <div class="link-caption">Delivered GMV recorded so far.</div>
+          </div>
+          <strong>${{ "%.2f"|format(metrics.total_revenue) }}</strong>
+        </a>
+        <div class="link-card">
+          <div>
+            <div class="link-name">Unread notifications</div>
+            <div class="link-caption">Operational alerts or customer updates awaiting reads.</div>
+          </div>
+          <strong>{{ metrics.unread_notifications }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-grid">
+    <div class="table-card">
+      <div class="table-header">
+        <h2>User Mix</h2>
+        <span class="table-kicker">Who is active on the platform right now</span>
+      </div>
+      <div class="status-grid">
+        <div class="status-card tone-info">
+          <div class="status-copy">
+            <span class="status-label">Customers</span>
+            <span class="link-caption">Users placing and managing orders</span>
+          </div>
+          <div class="status-value">{{ metrics.total_customers }}</div>
+        </div>
+        <div class="status-card tone-success">
+          <div class="status-copy">
+            <span class="status-label">Restaurant owners</span>
+            <span class="link-caption">Merchant-side users in the ecosystem</span>
+          </div>
+          <div class="status-value">{{ metrics.total_restaurant_owners }}</div>
+        </div>
+        <div class="status-card tone-warning">
+          <div class="status-copy">
+            <span class="status-label">Admins</span>
+            <span class="link-caption">Users with elevated operational permissions</span>
+          </div>
+          <div class="status-value">{{ metrics.total_admins }}</div>
+        </div>
+        <div class="status-card tone-muted">
+          <div class="status-copy">
+            <span class="status-label">Rider accounts</span>
+            <span class="link-caption">User accounts registered for rider workflows</span>
+          </div>
+          <div class="status-value">{{ metrics.total_rider_accounts }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <h2>Engagement And Payments</h2>
+        <span class="table-kicker">Supporting signals for production operations</span>
+      </div>
+      <div class="status-grid">
+        <div class="status-card tone-info">
+          <div class="status-copy">
+            <span class="status-label">Reviews captured</span>
+            <span class="link-caption">Feedback records stored by the system</span>
+          </div>
+          <div class="status-value">{{ metrics.reviews_total }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-grid">
+    <div class="table-card" id="approvals">
+      <div class="table-header">
+        <h2>Restaurants Awaiting Approval</h2>
+        <span class="table-kicker">{{ pending_restaurants|length }} queueing for review</span>
+      </div>
+      {% if pending_restaurants %}
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>Brand</th>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rest in pending_restaurants %}
+          <tr>
+            <td>
+              {% set brand_image = rest.logo_image_url or rest.cover_image_url %}
+              {% if brand_image %}
+              <img
+                src="{{ brand_image }}"
+                alt="{{ rest.name }}"
+                style="width:52px;height:52px;object-fit:cover;border-radius:16px;border:1px solid rgba(148,163,184,0.18);"
+              >
+              {% else %}
+              <div style="width:52px;height:52px;border-radius:16px;background:rgba(245,158,11,0.16);display:grid;place-items:center;font-weight:800;color:#b45309;">
+                {{ (rest.name[:1] if rest.name else '?')|upper }}
+              </div>
+              {% endif %}
+            </td>
+            <td>
+              <a class="admin-entity-link" href="{{ url_for('restaurants.details_view', id=rest.id, url=url_for('restaurants.index_view')) }}"><strong>{{ rest.name }}</strong></a><br>
+              <span class="muted-text" style="font-size:0.75rem;">{{ rest.phone or 'No phone provided' }}</span>
+            </td>
+            <td>{{ rest.cuisine_type or 'N/A' }}</td>
+            <td>
+              <div style="display:flex;flex-wrap:wrap;gap:0.55rem;">
+                <a class="btn-action btn-view" href="{{ url_for('restaurants.details_view', id=rest.id, url=url_for('restaurants.index_view')) }}">View</a>
+                <form action="{{ url_for('.approve_restaurant', restaurant_id=rest.id) }}" method="POST" style="margin:0;">
+                  <button type="submit" class="btn-action btn-approve">Approve</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <p>No restaurants waiting for approval. Great job!</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="table-card" id="orders">
+      <div class="table-header">
+        <h2>Recent Orders</h2>
+        <span class="table-kicker">Most recently created orders</span>
+      </div>
+      {% if recent_orders %}
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Customer</th>
+            <th>Amount</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in recent_orders %}
+          <tr>
+            <td>#{{ order.id }}</td>
+            <td>{{ order.contact_name or 'Unknown' }}</td>
+            <td>${{ "%.2f"|format(order.total_amount) }}</td>
+            <td>
+              <span class="status-badge status-{{ order.status|lower|replace(' ', '-')|replace('_', '-') }}">
+                {{ order.status|title }}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <p>No orders placed yet.</p>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+  </div>
+
+  <div class="nav-section-stack">
+    {% for section in dashboard_sections %}
+    <section class="nav-sequence-section" id="{{ section.id }}">
+      <div class="sequence-card">
+        <div class="sequence-header">
+          <div>
+            <span class="sequence-eyebrow">{{ section.eyebrow }}</span>
+            <h2 class="sequence-title">{{ section.title }}</h2>
+            <p class="sequence-copy">{{ section.description }}</p>
+          </div>
+          <div class="sequence-kpi">
+            <span class="sequence-kpi-label">{{ section.primary_label }}</span>
+            <div class="sequence-kpi-value">{{ section.primary_value }}</div>
+            <a class="sequence-kpi-link" href="{{ section.url }}">Open {{ section.title }}</a>
+          </div>
+        </div>
+        <div class="sequence-body">
+          <div>
+            <div class="sequence-panel-title">{{ section.title }} snapshot</div>
+            <div class="sequence-stat-grid">
+              {% for stat in section.stats %}
+              <div class="sequence-stat">
+                <span class="sequence-stat-label">{{ stat.label }}</span>
+                <div class="sequence-stat-value">{{ stat.value }}</div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div>
+            <div class="sequence-panel-title">Recent {{ section.title|lower }}</div>
+            {% if section.records %}
+            <div class="sequence-record-list">
+              {% for record in section.records %}
+              <a class="sequence-record" href="{{ record.href }}">
+                <div>
+                  <div class="sequence-record-title">{{ record.title }}</div>
+                  <div class="sequence-record-meta">{{ record.meta }}</div>
+                </div>
+                <div class="sequence-record-aux">{{ record.aux }}</div>
+              </a>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="sequence-empty">No recent {{ section.title|lower }} records yet.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </section>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block tail %}
+  {{ super() }}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const anchorMap = {{ dashboard_anchor_map|tojson }};
+      const currentPath = window.location.pathname;
+      if (!currentPath.endsWith('/admin/') && !currentPath.endsWith('/admin')) {
+        return;
+      }
+
+      const navLinks = Array.from(document.querySelectorAll('.admin-sidebar a[href]'));
+      navLinks.forEach(function (link) {
+        const href = link.getAttribute('href');
+        if (href && anchorMap[href]) {
+          link.setAttribute('href', anchorMap[href]);
+          link.setAttribute('data-dashboard-anchor', anchorMap[href]);
+        }
+      });
+
+      const sectionLinks = navLinks.filter(function (link) {
+        return link.hasAttribute('data-dashboard-anchor');
+      });
+      const sections = sectionLinks
+        .map(function (link) {
+          return document.querySelector(link.getAttribute('data-dashboard-anchor'));
+        })
+        .filter(Boolean);
+
+      if (!sectionLinks.length || !sections.length) {
+        return;
+      }
+
+      const observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) {
+            return;
+          }
+          const activeId = '#' + entry.target.id;
+          sectionLinks.forEach(function (link) {
+            const active = link.getAttribute('data-dashboard-anchor') === activeId;
+            link.classList.toggle('is-active', active);
+            const parent = link.closest('li');
+            if (parent) {
+              parent.classList.toggle('active', active);
+            }
+          });
+        });
+      }, { rootMargin: '-25% 0px -55% 0px', threshold: 0.1 });
+
+      sections.forEach(function (section) {
+        observer.observe(section);
+      });
+    });
+  </script>
+{% endblock %}

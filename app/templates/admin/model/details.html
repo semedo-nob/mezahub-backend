@@ -1,0 +1,48 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+<div class="details-shell">
+  <section class="toolbar-panel">
+    <div class="toolbar-top">
+      <div class="toolbar-copy">
+        <div class="section-kicker">{{ admin_view.name }}</div>
+        <h1 class="toolbar-title">{{ admin_view.name }} Details</h1>
+        <p class="toolbar-subtitle">Review the full record, then jump back to the list or continue editing.</p>
+      </div>
+      <div class="toolbar-cta">
+        <a class="btn btn-default" href="{{ return_url }}">{{ _gettext('Back To List') }}</a>
+        {% if admin_view.can_edit %}
+        <a class="btn btn-primary" href="{{ get_url('.edit_view', id=request.args.get('id'), url=return_url) }}">{{ _gettext('Edit Record') }}</a>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <section class="details-card">
+    <div class="details-card-header">
+      <h2 class="mb-1">Record Overview</h2>
+      <p class="mb-0 text-muted">All available fields for this entry.</p>
+    </div>
+    <div class="details-card-body">
+      <div class="details-list">
+        {% for c, name in details_columns %}
+        <div class="details-row">
+          <div class="details-row-label">{{ name }}</div>
+          <div class="details-row-value">
+            {% set value = get_value(model, c) %}
+            {% if c in ['logo_image', 'cover_image', 'image_url', 'profile_image'] and value %}
+              <div style="display:grid;gap:0.8rem;">
+                <img src="{{ value }}" alt="{{ name }}" style="max-width:240px;max-height:240px;object-fit:cover;border-radius:18px;border:1px solid rgba(148,163,184,0.16);">
+                <a href="{{ value }}" target="_blank" rel="noopener noreferrer">{{ value }}</a>
+              </div>
+            {% else %}
+              {{ value }}
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

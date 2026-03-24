@@ -1,0 +1,158 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+<div class="details-shell">
+  <section class="toolbar-panel">
+    <div class="toolbar-top">
+      <div class="toolbar-copy">
+        <div class="section-kicker">User profile</div>
+        <h1 class="toolbar-title">{{ model.name }}</h1>
+        <p class="toolbar-subtitle">Detailed account view for support, moderation, and operational follow-up.</p>
+      </div>
+      <div class="toolbar-cta">
+        <a class="btn btn-default" href="{{ return_url }}">{{ _gettext('Back To Users') }}</a>
+        {% if admin_view.can_edit %}
+        <a class="btn btn-primary" href="{{ get_url('.edit_view', id=model.id, url=return_url) }}">{{ _gettext('Edit User') }}</a>
+        {% endif %}
+        {% if not current_user or current_user.id != model.id %}
+        <form method="POST" action="{{ get_url('.toggle_operations', user_id=model.id) }}" style="display:inline-flex;">
+          <input type="hidden" name="return_url" value="{{ request.url }}">
+          <button type="submit" class="btn {% if model.is_active %}btn-danger{% else %}btn-success{% endif %}">
+            {% if model.is_active %}Pause Operations{% else %}Resume Operations{% endif %}
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <div class="profile-shell">
+    <aside class="profile-card">
+      <div class="profile-avatar">
+        {% if model.profile_image %}
+        <img src="{{ model.profile_image }}" alt="{{ model.name }}">
+        {% else %}
+        <span>{{ (model.name[:1] if model.name else '?')|upper }}</span>
+        {% endif %}
+      </div>
+      <div class="profile-name">{{ model.name }}</div>
+      <div class="profile-meta">{{ model.email }}</div>
+
+      <div>
+        <span class="profile-pill">{{ model.role|replace('_', ' ')|title }}</span>
+        <span class="profile-pill">
+          {% if model.is_active %}Active{% else %}Inactive{% endif %}
+        </span>
+      </div>
+
+      <div class="profile-actions">
+        <a class="btn btn-default" href="mailto:{{ model.email }}">Email</a>
+        {% if model.phone %}
+        <a class="btn btn-default" href="tel:{{ model.phone }}">Call</a>
+        {% endif %}
+      </div>
+    </aside>
+
+    <div class="profile-content">
+      <section class="profile-section">
+        <div class="profile-section-header">
+          <div>
+            <h2 class="mb-1">At A Glance</h2>
+            <p class="mb-0 text-muted">A simplified summary for quick admin decisions.</p>
+          </div>
+        </div>
+        <div class="profile-section-body">
+          <div class="profile-highlight-grid">
+            <div class="profile-highlight">
+              <div class="profile-highlight-label">Account Status</div>
+              <div class="profile-highlight-value">{% if model.is_active %}Active{% else %}Inactive{% endif %}</div>
+            </div>
+            <div class="profile-highlight">
+              <div class="profile-highlight-label">Owned Restaurants</div>
+              <div class="profile-highlight-value">{{ model.restaurants.count() if model.restaurants is defined else 0 }}</div>
+            </div>
+            <div class="profile-highlight">
+              <div class="profile-highlight-label">Push Token</div>
+              <div class="profile-highlight-value">{% if model.firebase_token %}Ready{% else %}Missing{% endif %}</div>
+            </div>
+          </div>
+          <div class="profile-grid">
+            <div class="profile-field">
+              <span class="profile-label">Full name</span>
+              <div class="profile-value">{{ model.name }}</div>
+            </div>
+            <div class="profile-field">
+              <span class="profile-label">Email</span>
+              <div class="profile-value">{{ model.email }}</div>
+            </div>
+            <div class="profile-field">
+              <span class="profile-label">Phone</span>
+              <div class="profile-value">{{ model.phone or 'No phone on file' }}</div>
+            </div>
+            <div class="profile-field">
+              <span class="profile-label">Role</span>
+              <div class="profile-value">{{ model.role|replace('_', ' ')|title }}</div>
+            </div>
+            <div class="profile-field">
+              <span class="profile-label">Status</span>
+              <div class="profile-value">{% if model.is_active %}Active{% else %}Inactive{% endif %}</div>
+            </div>
+            <div class="profile-field">
+              <span class="profile-label">Joined</span>
+              <div class="profile-value">{{ model.created_at.strftime('%b %d, %Y %H:%M UTC') if model.created_at else 'Unknown' }}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="profile-section">
+        <div class="profile-section-header">
+          <div>
+            <h2 class="mb-1">Operational Context</h2>
+            <p class="mb-0 text-muted">The most useful context for support, moderation, or follow-up.</p>
+          </div>
+        </div>
+        <div class="profile-section-body">
+          <div class="profile-grid">
+            <div class="profile-field">
+              <span class="profile-label">Owned restaurants</span>
+              <div class="profile-value">{{ model.restaurants.count() if model.restaurants is defined else 0 }}</div>
+            </div>
+            <div class="profile-field">
+              <span class="profile-label">Profile image</span>
+              <div class="profile-value">{% if model.profile_image %}Configured{% else %}Not set{% endif %}</div>
+            </div>
+            <div class="profile-field">
+              <span class="profile-label">Firebase token</span>
+              <div class="profile-value">{% if model.firebase_token %}Available{% else %}Not available{% endif %}</div>
+            </div>
+            <div class="profile-field">
+              <span class="profile-label">Internal ID</span>
+              <div class="profile-value">#{{ model.id }}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="profile-section">
+        <div class="profile-section-header">
+          <div>
+            <h2 class="mb-1">Full Record</h2>
+            <p class="mb-0 text-muted">Complete database fields, kept secondary so the page stays easier to scan.</p>
+          </div>
+        </div>
+        <div class="profile-section-body">
+          <div class="details-list">
+            {% for c, name in details_columns %}
+            <div class="details-row">
+              <div class="details-row-label">{{ name }}</div>
+              <div class="details-row-value">{{ get_value(model, c) }}</div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}

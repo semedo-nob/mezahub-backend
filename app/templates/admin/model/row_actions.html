@@ -1,0 +1,41 @@
+{% macro link(action, url, icon_class, label) %}
+<a class="row-action-link" href="{{ url }}" title="{{ action.title or label }}">
+  <span class="{{ icon_class }}"></span>
+  <span>{{ label }}</span>
+</a>
+{% endmacro %}
+
+{% macro view_row(action, row_id, row) %}
+  {{ link(action, get_url('.details_view', id=row_id, url=return_url), 'fa fa-eye glyphicon glyphicon-eye-open', 'View') }}
+{% endmacro %}
+
+{% macro view_row_popup(action, row_id, row) %}
+  {{ link(action, get_url('.details_view', id=row_id, url=return_url, modal=True), 'fa fa-eye glyphicon glyphicon-eye-open', 'View') }}
+{% endmacro %}
+
+{% macro edit_row(action, row_id, row) %}
+  {{ link(action, get_url('.edit_view', id=row_id, url=return_url), 'fa fa-pencil glyphicon glyphicon-pencil', 'Edit') }}
+{% endmacro %}
+
+{% macro edit_row_popup(action, row_id, row) %}
+  {{ link(action, get_url('.edit_view', id=row_id, url=return_url, modal=True), 'fa fa-pencil glyphicon glyphicon-pencil', 'Edit') }}
+{% endmacro %}
+
+{% macro delete_row(action, row_id, row) %}
+<form class="row-action-delete-form" method="POST" action="{{ get_url('.delete_view') }}">
+  {{ delete_form.id(value=get_pk_value(row)) }}
+  {{ delete_form.url(value=return_url) }}
+  {% if delete_form.csrf_token is defined and delete_form.csrf_token %}
+  {{ delete_form.csrf_token }}
+  {% elif csrf_token is defined and csrf_token %}
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+  {% endif %}
+  <button type="button"
+          class="row-action-link row-action-danger js-delete-action"
+          data-record="Record #{{ row_id }}"
+          title="{{ _gettext('Delete Record') }}">
+    <span class="fa fa-trash glyphicon glyphicon-trash"></span>
+    <span>Delete</span>
+  </button>
+</form>
+{% endmacro %}
