@@ -4,6 +4,7 @@ from datetime import datetime
 
 import bcrypt
 from flask_jwt_extended import create_access_token
+from sqlalchemy import func
 
 from app.extensions.database import db
 from app.utils.media import build_media_url
@@ -56,3 +57,15 @@ class User(db.Model):
     @staticmethod
     def find_by_email(email: str) -> "User | None":
         return User.query.filter_by(email=email).first()
+
+    @staticmethod
+    def find_by_login(login: str) -> "User | None":
+        normalized = (login or "").strip().lower()
+        if not normalized:
+            return None
+
+        user = User.query.filter(func.lower(User.email) == normalized).first()
+        if user:
+            return user
+
+        return User.query.filter(func.lower(User.name) == normalized).first()
