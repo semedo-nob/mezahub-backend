@@ -32,6 +32,10 @@ class Config:
     JWT_REFRESH_TOKEN_EXPIRES_DAYS = int(os.environ.get("JWT_REFRESH_TOKEN_EXPIRES_DAYS", "7"))
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": int(os.environ.get("DB_POOL_RECYCLE_SECONDS", "1800")),
+    }
 
     REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
     CORS_ORIGINS = [
