@@ -55,6 +55,20 @@ class Config:
 
     ITEMS_PER_PAGE = int(os.environ.get("ITEMS_PER_PAGE", "20"))
 
+    MPESA_ENV = os.environ.get("MPESA_ENV", "sandbox").strip().lower()
+    MPESA_CONSUMER_KEY = os.environ.get("MPESA_CONSUMER_KEY", "").strip()
+    MPESA_CONSUMER_SECRET = os.environ.get("MPESA_CONSUMER_SECRET", "").strip()
+    MPESA_SHORTCODE = os.environ.get("MPESA_SHORTCODE", "174379").strip()
+    MPESA_PASSKEY = os.environ.get("MPESA_PASSKEY", "").strip()
+    MPESA_INITIATOR_NAME = os.environ.get("MPESA_INITIATOR_NAME", "").strip()
+    MPESA_B2C_SECURITY_CREDENTIAL = os.environ.get(
+        "MPESA_B2C_SECURITY_CREDENTIAL", ""
+    ).strip()
+    MPESA_CALLBACK_BASE_URL = os.environ.get("MPESA_CALLBACK_BASE_URL", "").strip()
+    MPESA_STK_CALLBACK_URL = os.environ.get("MPESA_STK_CALLBACK_URL", "").strip()
+    MPESA_B2C_RESULT_URL = os.environ.get("MPESA_B2C_RESULT_URL", "").strip()
+    MPESA_B2C_TIMEOUT_URL = os.environ.get("MPESA_B2C_TIMEOUT_URL", "").strip()
+
     # Rate limiting configuration (Flask-Limiter reads these from app.config)
     RATELIMIT_ENABLED = os.environ.get("RATELIMIT_ENABLED", "true").lower() == "true"
     RATELIMIT_STORAGE_URI = os.environ.get("RATELIMIT_STORAGE_URI", REDIS_URL)

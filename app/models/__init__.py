@@ -6,7 +6,7 @@ from .rider_location import RiderLocation
 from .order import Order, OrderItem, OrderStatusHistory
 from .cart import Cart, CartItem
 from .delivery import Delivery
-from .payment import Payment
+from .payment import Payment, Payout
 from .notification import Notification
 from .review import Review
 from .favorite import Favorite

@@ -4,7 +4,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
 from app.extensions.database import db
 from app.extensions.socketio import socketio
-from app.models import Order, OrderItem, MenuItem, Delivery, Rider, RiderLocation, OrderStatusHistory, User, Restaurant
+from app.models import Order, OrderItem, MenuItem, Delivery, Rider, RiderLocation, OrderStatusHistory, User, Restaurant, Payment
 from app.schemas.order_schema import OrderSchema
 from app.utils.decorators import roles_required
 
@@ -398,6 +398,9 @@ class OrderAssignRider(Resource):
         # update order status + history
         order.status = "assigned"
         db.session.add(OrderStatusHistory(order_id=order.id, status="assigned", notes="Rider assigned"))
+        payment = Payment.query.filter_by(order_id=order.id).order_by(Payment.id.desc()).first()
+        if payment:
+            payment.rider_id = rider.id
         db.session.commit()
 
         # Realtime event to everyone in order room (customer, restaurant, rider)
@@ -459,4 +462,3 @@ class OrderStatus(Resource):
             room=f"order:{order.id}",
         )
         return _serialize_order(order)
-

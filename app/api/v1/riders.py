@@ -4,7 +4,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from app.extensions.database import db
 from app.extensions.socketio import socketio
-from app.models import Rider, User, Delivery, Order, OrderStatusHistory, Restaurant, RiderLocation
+from app.models import Rider, User, Delivery, Order, OrderStatusHistory, Restaurant, RiderLocation, Payment
 from app.utils.decorators import roles_required
 
 riders_ns = Namespace("riders", description="Rider operations")
@@ -196,6 +196,9 @@ class RiderAcceptOrder(Resource):
 
         order.status = "assigned"
         db.session.add(OrderStatusHistory(order_id=order_id, status="assigned", notes="Rider accepted order"))
+        payment = Payment.query.filter_by(order_id=order_id).order_by(Payment.id.desc()).first()
+        if payment:
+            payment.rider_id = rider.id
 
         # Store rider's current location when accepting (optional from app)
         payload = request.get_json(silent=True) or {}
@@ -260,4 +263,3 @@ class RiderAssignments(Resource):
                 }
             )
         return result
-

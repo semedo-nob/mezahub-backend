@@ -8,7 +8,7 @@ from flask_jwt_extended import decode_token
 
 from app.extensions.socketio import socketio
 from app.extensions.database import db
-from app.models import Delivery, Rider, RiderLocation, Order, User
+from app.models import Delivery, Rider, RiderLocation, Order, User, Restaurant
 
 
 def _get_bearer_token_from_headers() -> str | None:
@@ -45,6 +45,18 @@ def init_socket_handlers() -> None:
             # Stash identity/role into Socket.IO session.
             socketio.server.session(request.sid)["user_id"] = int(decoded["sub"])
             socketio.server.session(request.sid)["role"] = decoded.get("role")
+            socketio.enter_room(request.sid, f"user:{int(decoded['sub'])}")
+
+            role = decoded.get("role")
+            if role == "admin":
+                socketio.enter_room(request.sid, "admin_dashboard")
+            elif role == "restaurant":
+                for restaurant in Restaurant.query.filter_by(owner_id=int(decoded["sub"])).all():
+                    socketio.enter_room(request.sid, f"restaurant:{restaurant.id}")
+            elif role == "rider":
+                rider = Rider.query.filter_by(user_id=int(decoded["sub"])).first()
+                if rider:
+                    socketio.enter_room(request.sid, f"rider:{rider.id}")
         except Exception:
             return False
         return True
