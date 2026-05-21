@@ -1,7 +1,7 @@
 import json
 from datetime import datetime, timedelta
 
-from flask import request, Response, url_for, redirect, flash
+from flask import request, Response, url_for, redirect, flash, current_app
 from flask_admin import Admin, AdminIndexView, expose
 from flask_admin.contrib.sqla import ModelView
 from markupsafe import Markup
@@ -42,6 +42,58 @@ def get_current_admin_user():
 
 
 DASHBOARD_CACHE_KEY = "admin:dashboard:v1"
+
+
+def _empty_dashboard_data() -> dict:
+    return {
+        "metrics": {
+            "total_users": 0,
+            "total_admins": 0,
+            "total_customers": 0,
+            "total_restaurant_owners": 0,
+            "total_rider_accounts": 0,
+            "total_restaurants": 0,
+            "open_restaurants": 0,
+            "total_orders": 0,
+            "total_revenue": 0.0,
+            "revenue_today": 0.0,
+            "pending_restaurants": 0,
+            "total_riders": 0,
+            "available_riders": 0,
+            "total_menu_items": 0,
+            "total_categories": 0,
+            "total_deliveries": 0,
+            "orders_today": 0,
+            "orders_in_flight": 0,
+            "pending_orders": 0,
+            "delivered_orders": 0,
+            "cancelled_orders": 0,
+            "other_orders": 0,
+            "pending_deliveries": 0,
+            "completed_deliveries": 0,
+            "payments_total": 0,
+            "payments_completed": 0,
+            "payments_pending": 0,
+            "payments_failed": 0,
+            "carts_total": 0,
+            "favorites_total": 0,
+            "reviews_total": 0,
+            "avg_review_rating": 0.0,
+            "notifications_total": 0,
+            "unread_notifications": 0,
+        },
+        "dashboard_modules": [],
+        "dashboard_sections": [],
+        "dashboard_anchor_map": {},
+        "order_statuses": [],
+        "payment_statuses": [],
+        "platform_health": [],
+        "trend_labels": [],
+        "order_trend": [],
+        "revenue_trend": [],
+        "pending_restaurants": [],
+        "recent_orders": [],
+    }
 
 
 def count_users_by_roles(*roles):
@@ -251,118 +303,119 @@ class SecureAdminIndexView(AdminIndexView):
         dashboard_data = json.loads(cached_payload) if cached_payload else None
 
         if dashboard_data is None:
-            yesterday = today - timedelta(days=1)
-            seven_days_ago = today - timedelta(days=6)
+            try:
+                yesterday = today - timedelta(days=1)
+                seven_days_ago = today - timedelta(days=6)
 
-            metrics = {
-                "total_users": User.query.filter_by(is_active=True).count(),
-                "total_admins": count_users_by_roles('admin'),
-                "total_customers": User.query.filter_by(role='customer').count(),
-                "total_restaurant_owners": count_users_by_roles('restaurant', 'restaurant_owner'),
-                "total_rider_accounts": count_users_by_roles('rider'),
-                "total_restaurants": Restaurant.query.filter_by(approved=True).count(),
-                "open_restaurants": Restaurant.query.filter_by(approved=True, is_open=True).count(),
-                "total_orders": Order.query.count(),
-                "total_revenue": float(db.session.query(db.func.sum(Order.total_amount)).filter(Order.status == 'delivered').scalar() or 0),
-                "revenue_today": float(db.session.query(db.func.sum(Order.total_amount)).filter(
-                    Order.status == 'delivered',
-                    Order.created_at >= yesterday,
-                ).scalar() or 0),
-                "pending_restaurants": Restaurant.query.filter_by(approved=False).count(),
-                "total_riders": Rider.query.count(),
-                "available_riders": Rider.query.filter_by(is_available=True).count(),
-                "total_menu_items": MenuItem.query.count(),
-                "total_categories": MenuCategory.query.count(),
-                "total_deliveries": Delivery.query.count(),
-                "orders_today": Order.query.filter(Order.created_at >= yesterday).count(),
-                "orders_in_flight": Order.query.filter(
-                    Order.status.in_(["pending", "confirmed", "preparing", "assigned", "picked_up", "on_the_way"])
-                ).count(),
-                "pending_orders": Order.query.filter_by(status='pending').count(),
-                "delivered_orders": Order.query.filter_by(status='delivered').count(),
-                "cancelled_orders": Order.query.filter_by(status='cancelled').count(),
-                "other_orders": Order.query.filter(
-                    ~Order.status.in_(["pending", "confirmed", "preparing", "assigned", "picked_up", "on_the_way", "delivered", "cancelled"])
-                ).count(),
-                "pending_deliveries": Delivery.query.filter_by(status='pending').count(),
-                "completed_deliveries": Delivery.query.filter(Delivery.status.in_(["delivered", "completed"])).count(),
-                "payments_total": Payment.query.count(),
-                "payments_completed": Payment.query.filter(Payment.status.in_(["completed", "paid", "successful"])).count(),
-                "payments_pending": Payment.query.filter(Payment.status.in_(["pending", "processing"])).count(),
-                "payments_failed": Payment.query.filter(Payment.status.in_(["failed", "cancelled"])).count(),
-                "carts_total": Cart.query.count(),
-                "favorites_total": Favorite.query.count(),
-                "reviews_total": Review.query.count(),
-                "avg_review_rating": float(db.session.query(db.func.avg(Review.rating)).scalar() or 0),
-                "notifications_total": Notification.query.count(),
-                "unread_notifications": Notification.query.filter_by(is_read=False).count(),
-            }
-
-            order_trend_rows = (
-                db.session.query(
-                    db.func.date(Order.created_at).label("day"),
-                    db.func.count(Order.id).label("count"),
-                    db.func.coalesce(db.func.sum(Order.total_amount), 0).label("revenue"),
-                )
-                .filter(Order.created_at >= seven_days_ago)
-                .group_by(db.func.date(Order.created_at))
-                .order_by(db.func.date(Order.created_at))
-                .all()
-            )
-
-            order_trend_map = {
-                row.day: {
-                    "orders": int(row.count or 0),
-                    "revenue": float(row.revenue or 0),
+                metrics = {
+                    "total_users": User.query.filter_by(is_active=True).count(),
+                    "total_admins": count_users_by_roles('admin'),
+                    "total_customers": User.query.filter_by(role='customer').count(),
+                    "total_restaurant_owners": count_users_by_roles('restaurant', 'restaurant_owner'),
+                    "total_rider_accounts": count_users_by_roles('rider'),
+                    "total_restaurants": Restaurant.query.filter_by(approved=True).count(),
+                    "open_restaurants": Restaurant.query.filter_by(approved=True, is_open=True).count(),
+                    "total_orders": Order.query.count(),
+                    "total_revenue": float(db.session.query(db.func.sum(Order.total_amount)).filter(Order.status == 'delivered').scalar() or 0),
+                    "revenue_today": float(db.session.query(db.func.sum(Order.total_amount)).filter(
+                        Order.status == 'delivered',
+                        Order.created_at >= yesterday,
+                    ).scalar() or 0),
+                    "pending_restaurants": Restaurant.query.filter_by(approved=False).count(),
+                    "total_riders": Rider.query.count(),
+                    "available_riders": Rider.query.filter_by(is_available=True).count(),
+                    "total_menu_items": MenuItem.query.count(),
+                    "total_categories": MenuCategory.query.count(),
+                    "total_deliveries": Delivery.query.count(),
+                    "orders_today": Order.query.filter(Order.created_at >= yesterday).count(),
+                    "orders_in_flight": Order.query.filter(
+                        Order.status.in_(["pending", "confirmed", "preparing", "assigned", "picked_up", "on_the_way"])
+                    ).count(),
+                    "pending_orders": Order.query.filter_by(status='pending').count(),
+                    "delivered_orders": Order.query.filter_by(status='delivered').count(),
+                    "cancelled_orders": Order.query.filter_by(status='cancelled').count(),
+                    "other_orders": Order.query.filter(
+                        ~Order.status.in_(["pending", "confirmed", "preparing", "assigned", "picked_up", "on_the_way", "delivered", "cancelled"])
+                    ).count(),
+                    "pending_deliveries": Delivery.query.filter_by(status='pending').count(),
+                    "completed_deliveries": Delivery.query.filter(Delivery.status.in_(["delivered", "completed"])).count(),
+                    "payments_total": Payment.query.count(),
+                    "payments_completed": Payment.query.filter(Payment.status.in_(["completed", "paid", "successful"])).count(),
+                    "payments_pending": Payment.query.filter(Payment.status.in_(["pending", "processing"])).count(),
+                    "payments_failed": Payment.query.filter(Payment.status.in_(["failed", "cancelled"])).count(),
+                    "carts_total": Cart.query.count(),
+                    "favorites_total": Favorite.query.count(),
+                    "reviews_total": Review.query.count(),
+                    "avg_review_rating": float(db.session.query(db.func.avg(Review.rating)).scalar() or 0),
+                    "notifications_total": Notification.query.count(),
+                    "unread_notifications": Notification.query.filter_by(is_read=False).count(),
                 }
-                for row in order_trend_rows
-            }
 
-            trend_labels = []
-            order_trend = []
-            revenue_trend = []
-            for offset in range(7):
-                point_day = (seven_days_ago + timedelta(days=offset)).date().isoformat()
-                trend_labels.append((seven_days_ago + timedelta(days=offset)).strftime("%a"))
-                order_trend.append(order_trend_map.get(point_day, {}).get("orders", 0))
-                revenue_trend.append(order_trend_map.get(point_day, {}).get("revenue", 0))
+                order_trend_rows = (
+                    db.session.query(
+                        db.func.date(Order.created_at).label("day"),
+                        db.func.count(Order.id).label("count"),
+                        db.func.coalesce(db.func.sum(Order.total_amount), 0).label("revenue"),
+                    )
+                    .filter(Order.created_at >= seven_days_ago)
+                    .group_by(db.func.date(Order.created_at))
+                    .order_by(db.func.date(Order.created_at))
+                    .all()
+                )
 
-            pending_restaurants = [
-                _serialize_pending_restaurant(restaurant)
-                for restaurant in Restaurant.query.filter_by(approved=False).order_by(Restaurant.created_at.desc()).limit(10).all()
-            ]
-            recent_order_rows = Order.query.order_by(Order.created_at.desc()).limit(8).all()
-            recent_orders = [_serialize_recent_order(order) for order in recent_order_rows]
-            recent_users = User.query.order_by(User.created_at.desc()).limit(5).all()
-            recent_restaurants = Restaurant.query.order_by(Restaurant.created_at.desc()).limit(5).all()
-            recent_menu_items = MenuItem.query.order_by(MenuItem.created_at.desc()).limit(5).all()
-            recent_categories = MenuCategory.query.order_by(MenuCategory.created_at.desc()).limit(5).all()
-            recent_deliveries = Delivery.query.order_by(Delivery.created_at.desc()).limit(5).all()
-            recent_riders = Rider.query.order_by(Rider.created_at.desc()).limit(5).all()
+                order_trend_map = {
+                    row.day: {
+                        "orders": int(row.count or 0),
+                        "revenue": float(row.revenue or 0),
+                    }
+                    for row in order_trend_rows
+                }
 
-            order_statuses = [
-                {"label": "Pending", "value": metrics["pending_orders"], "tone": "warning"},
-                {"label": "In Flight", "value": metrics["orders_in_flight"], "tone": "info"},
-                {"label": "Delivered", "value": metrics["delivered_orders"], "tone": "success"},
-                {"label": "Cancelled", "value": metrics["cancelled_orders"], "tone": "danger"},
-                {"label": "Other", "value": metrics["other_orders"], "tone": "muted"},
-            ]
+                trend_labels = []
+                order_trend = []
+                revenue_trend = []
+                for offset in range(7):
+                    point_day = (seven_days_ago + timedelta(days=offset)).date().isoformat()
+                    trend_labels.append((seven_days_ago + timedelta(days=offset)).strftime("%a"))
+                    order_trend.append(order_trend_map.get(point_day, {}).get("orders", 0))
+                    revenue_trend.append(order_trend_map.get(point_day, {}).get("revenue", 0))
 
-            payment_statuses = [
-                {"label": "Completed Payments", "value": metrics["payments_completed"], "tone": "success"},
-                {"label": "Pending Payments", "value": metrics["payments_pending"], "tone": "warning"},
-                {"label": "Failed Payments", "value": metrics["payments_failed"], "tone": "danger"},
-                {"label": "Unread Notifications", "value": metrics["unread_notifications"], "tone": "info"},
-            ]
+                pending_restaurants = [
+                    _serialize_pending_restaurant(restaurant)
+                    for restaurant in Restaurant.query.filter_by(approved=False).order_by(Restaurant.created_at.desc()).limit(10).all()
+                ]
+                recent_order_rows = Order.query.order_by(Order.created_at.desc()).limit(8).all()
+                recent_orders = [_serialize_recent_order(order) for order in recent_order_rows]
+                recent_users = User.query.order_by(User.created_at.desc()).limit(5).all()
+                recent_restaurants = Restaurant.query.order_by(Restaurant.created_at.desc()).limit(5).all()
+                recent_menu_items = MenuItem.query.order_by(MenuItem.created_at.desc()).limit(5).all()
+                recent_categories = MenuCategory.query.order_by(MenuCategory.created_at.desc()).limit(5).all()
+                recent_deliveries = Delivery.query.order_by(Delivery.created_at.desc()).limit(5).all()
+                recent_riders = Rider.query.order_by(Rider.created_at.desc()).limit(5).all()
 
-            platform_health = [
-                {"label": "Open Restaurants", "value": metrics["open_restaurants"], "href": view_links.get("restaurants", "#")},
-                {"label": "Available Riders", "value": metrics["available_riders"], "href": view_links.get("riders", "#")},
-                {"label": "Active Carts", "value": metrics["carts_total"], "href": None},
-                {"label": "Average Rating", "value": f'{metrics["avg_review_rating"]:.1f}', "href": None},
-            ]
+                order_statuses = [
+                    {"label": "Pending", "value": metrics["pending_orders"], "tone": "warning"},
+                    {"label": "In Flight", "value": metrics["orders_in_flight"], "tone": "info"},
+                    {"label": "Delivered", "value": metrics["delivered_orders"], "tone": "success"},
+                    {"label": "Cancelled", "value": metrics["cancelled_orders"], "tone": "danger"},
+                    {"label": "Other", "value": metrics["other_orders"], "tone": "muted"},
+                ]
 
-            dashboard_modules = [
+                payment_statuses = [
+                    {"label": "Completed Payments", "value": metrics["payments_completed"], "tone": "success"},
+                    {"label": "Pending Payments", "value": metrics["payments_pending"], "tone": "warning"},
+                    {"label": "Failed Payments", "value": metrics["payments_failed"], "tone": "danger"},
+                    {"label": "Unread Notifications", "value": metrics["unread_notifications"], "tone": "info"},
+                ]
+
+                platform_health = [
+                    {"label": "Open Restaurants", "value": metrics["open_restaurants"], "href": view_links.get("restaurants", "#")},
+                    {"label": "Available Riders", "value": metrics["available_riders"], "href": view_links.get("riders", "#")},
+                    {"label": "Active Carts", "value": metrics["carts_total"], "href": None},
+                    {"label": "Average Rating", "value": f'{metrics["avg_review_rating"]:.1f}', "href": None},
+                ]
+
+                dashboard_modules = [
             {
                 "name": "Users",
                 "endpoint": "users",
@@ -414,10 +467,10 @@ class SecureAdminIndexView(AdminIndexView):
             },
             ]
 
-            for module in dashboard_modules:
-                module["url"] = view_links.get(module["endpoint"], "#")
+                for module in dashboard_modules:
+                    module["url"] = view_links.get(module["endpoint"], "#")
 
-            dashboard_sections = [
+                dashboard_sections = [
             {
                 "id": "section-users",
                 "title": "Users",
@@ -588,36 +641,40 @@ class SecureAdminIndexView(AdminIndexView):
             },
             ]
 
-            dashboard_anchor_map = {
-                view_links.get("users"): "#section-users",
-                view_links.get("restaurants"): "#section-restaurants",
-                view_links.get("orders"): "#section-orders",
-                view_links.get("menu_items"): "#section-menu-items",
-                view_links.get("categories"): "#section-categories",
-                view_links.get("deliveries"): "#section-deliveries",
-                view_links.get("riders"): "#section-riders",
-            }
+                dashboard_anchor_map = {
+                    view_links.get("users"): "#section-users",
+                    view_links.get("restaurants"): "#section-restaurants",
+                    view_links.get("orders"): "#section-orders",
+                    view_links.get("menu_items"): "#section-menu-items",
+                    view_links.get("categories"): "#section-categories",
+                    view_links.get("deliveries"): "#section-deliveries",
+                    view_links.get("riders"): "#section-riders",
+                }
 
-            dashboard_data = {
-                "metrics": metrics,
-                "dashboard_modules": dashboard_modules,
-                "dashboard_sections": dashboard_sections,
-                "dashboard_anchor_map": dashboard_anchor_map,
-                "order_statuses": order_statuses,
-                "payment_statuses": payment_statuses,
-                "platform_health": platform_health,
-                "trend_labels": trend_labels,
-                "order_trend": order_trend,
-                "revenue_trend": revenue_trend,
-                "pending_restaurants": pending_restaurants,
-                "recent_orders": recent_orders,
-            }
+                dashboard_data = {
+                    "metrics": metrics,
+                    "dashboard_modules": dashboard_modules,
+                    "dashboard_sections": dashboard_sections,
+                    "dashboard_anchor_map": dashboard_anchor_map,
+                    "order_statuses": order_statuses,
+                    "payment_statuses": payment_statuses,
+                    "platform_health": platform_health,
+                    "trend_labels": trend_labels,
+                    "order_trend": order_trend,
+                    "revenue_trend": revenue_trend,
+                    "pending_restaurants": pending_restaurants,
+                    "recent_orders": recent_orders,
+                }
 
-            if client and cache_ttl > 0:
-                try:
-                    client.setex(DASHBOARD_CACHE_KEY, cache_ttl, json.dumps(dashboard_data))
-                except Exception:
-                    pass
+                if client and cache_ttl > 0:
+                    try:
+                        client.setex(DASHBOARD_CACHE_KEY, cache_ttl, json.dumps(dashboard_data))
+                    except Exception:
+                        pass
+            except Exception:
+                current_app.logger.exception("Admin dashboard failed to build")
+                flash("Dashboard metrics are temporarily unavailable. Check database migrations and service logs.", "warning")
+                dashboard_data = _empty_dashboard_data()
 
         return self.render('admin/index.html',
                            metrics=dashboard_data["metrics"],
