@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask, request
 from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request
 from flask_cors import CORS
@@ -138,3 +140,7 @@ def create_app(config_name: str = "default") -> Flask:
         print("Database created!")
 
     return app
+
+
+# Compatibility entrypoint for hosts configured with `gunicorn app:app`.
+app = create_app(os.getenv("FLASK_ENV", "production"))
