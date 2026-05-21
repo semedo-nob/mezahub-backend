@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: mezahub-backend
+    env: python
+    plan: starter
+    branch: main
+    buildCommand: pip install --no-cache-dir -r requirements.txt
+    startCommand: sh -c 'gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 -b 0.0.0.0:$PORT wsgi:app'
+    healthCheckPath: /health
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: LOG_TO_STDOUT
+        value: true
+      - key: DATABASE_URL
+      - key: REDIS_URL
+      - key: SECRET_KEY
+      - key: JWT_SECRET_KEY
+      - key: CORS_ORIGINS
+      - key: PUBLIC_API_BASE_URL
+      - key: UPLOAD_FOLDER
+      - key: MPESA_ENV
+      - key: MPESA_CONSUMER_KEY
+      - key: MPESA_CONSUMER_SECRET
+      - key: MPESA_PASSKEY
+      - key: MPESA_INITIATOR_NAME
+      - key: MPESA_B2C_SECURITY_CREDENTIAL
+      - key: MPESA_CALLBACK_BASE_URL
+      - key: MPESA_STK_CALLBACK_URL
+      - key: MPESA_B2C_RESULT_URL
+      - key: MPESA_B2C_TIMEOUT_URL
