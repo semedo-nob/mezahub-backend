@@ -2,9 +2,9 @@
 
 ## Recommended stack
 
-- Backend hosting: Railway
-- Database: Neon PostgreSQL
-- Redis: Railway Redis or Upstash
+- Backend hosting: Render
+- Database: PostgreSQL (Render managed PostgreSQL or external provider)
+- Redis: Render Redis or external Redis provider
 
 ## Required backend environment variables
 
@@ -19,16 +19,28 @@
 
 ## Deploy flow
 
-1. Create a new Railway project from this repo.
-2. Add the environment variables above.
-3. Attach Redis or provide an external `REDIS_URL`.
+1. Create a new Render web service from this repo.
+2. Use the existing `render.yaml` manifest and set the service environment to Python.
+3. Add the required environment variables above in Render.
 4. Deploy the service.
-5. Run migrations:
+5. Run migrations from the Render shell or locally:
    - `flask db upgrade`
 6. Confirm health:
    - `GET /health`
    - `GET /admin`
    - `GET /api/v1/restaurants`
+
+## Render manifest
+
+This repo now includes `render.yaml` for Render service configuration.
+
+### Render start command
+
+If you need to enter the command manually, use:
+
+```bash
+sh -c 'gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 -b 0.0.0.0:$PORT wsgi:app'
+```
 
 ## Flutter apps
 

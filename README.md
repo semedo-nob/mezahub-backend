@@ -28,6 +28,49 @@ The server listens on `0.0.0.0:5000`, so it is reachable from other devices on t
 - Swagger UI: `http://localhost:5000/api/v1/docs/`
 - Health: `http://localhost:5000/health`
 
+## M-Pesa setup
+
+The backend now includes:
+
+- `POST /api/v1/payments/mpesa/stk-push`
+- `POST /api/v1/payments/mpesa/callback`
+- `GET /api/v1/payments/mpesa/query/<checkout_request_id>`
+- `POST /api/v1/payments/mpesa/rider-payout`
+
+Before using them:
+
+```bash
+flask db upgrade
+```
+
+Only put your private credentials in these places:
+
+- `.env`
+- Render environment variables
+
+Do not hardcode real values in source files.
+
+Sensitive values you must provide yourself:
+
+- `MPESA_CONSUMER_KEY`
+- `MPESA_CONSUMER_SECRET`
+- `MPESA_PASSKEY`
+- `MPESA_INITIATOR_NAME`
+- `MPESA_B2C_SECURITY_CREDENTIAL`
+- `SECRET_KEY`
+- `JWT_SECRET_KEY`
+- `DATABASE_URL` or `DB_PASSWORD`
+
+Public/non-secret but deployment-specific values:
+
+- `MPESA_CALLBACK_BASE_URL` or `MPESA_STK_CALLBACK_URL`
+- `MPESA_B2C_RESULT_URL`
+- `MPESA_B2C_TIMEOUT_URL`
+- `MPESA_SHORTCODE`
+- `MPESA_ENV`
+
+The template for these lives in [.env.example](/home/nelson/mezahub-backend/.env.example).
+
 ## Troubleshooting
 
 ### SQLAlchemy OperationalError when logging in (e.g. restaurant app)
